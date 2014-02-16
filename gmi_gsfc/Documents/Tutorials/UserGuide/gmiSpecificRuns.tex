@@ -1,0 +1,222 @@
+%
+\chapter[Performing Specific Runs]{Performing Specific Runs}
+\label{chap:runs}
+%
+%
+\section{The GMI Self  Contained Test} \label{sec:SelfContainedTest}
+%
+For testing the model, we provide the directory {\em gmi\_gsfc/SelfContainedTest}.
+We assume that the test is being run on {\tt discover} and uses the combo (strat\_trop)
+mechanism.  In this section we provide intructions for running a 2x2.5
+resolution combo model simulation.
+
+The latest version of the code requires an appropriate namelist file.  We provide
+this namelist file, {\em gmi\_gsfc/SelfContainedTest/namelist2x2.5.in}.
+This namelist file does not require modification to run the test.  
+All input files required to run the test are located in the
+{\em gmi\_gsfc/SelfContainedTest/input-2x2.5} directory; the namelist uses relative
+paths to locate the input files here.
+
+Edit the file {\em gmi\_gsfc/SelfContainedTest/run\_ref} and provide the full location 
+of the 
+{\em gmi\_gsfc/SelfContainedTest} directory (no relative paths) by 
+setting 
+%
+\begin{verbatim}
+        setenv workDir /discover/nobackup/userid/gmi_gsfc/SelfContainedTest
+\end{verbatim}
+%
+to the appropriate path.
+
+The test can now be run by typing
+%
+\begin{verbatim}
+        %qsub run_ref
+\end{verbatim}
+%
+
+Once the test has finished the standard output can be checked for a succesful run.
+The test run should have created one day's worth of output data.  The standard 
+output file should include a statement such as
+%
+\begin{verbatim}
+        --------  Successful completion of the run  -----------
+\end{verbatim}
+
+\section{Standard Runs} \label{sec:StandardRuns}
+
+The two files mentioned in the preceding section, {\em gmi\_gsfc/SelfContainedTest/namelist2x2.5.in} and
+{\em gmi\_gsfc/SelfContainedTest/run\_ref} can be used a basis for other types of
+runs, like a troposphere run, for example.  To use the various model configurations, the code
+will need to be compiled with one of the following options:
+%
+\begin{verbatim}
+        setenv CHEMCASE troposphere
+        setenv CHEMCASE stratosphere
+        setenv CHEMCASE strat_trop
+        setenv CHEMCASE strat_trop_aerosol
+        setenv CHEMCASE aerosol
+        setenv CHEMCASE micro_aerosol
+        setenv CHEMCASE gocart_aerosol
+\end{verbatim}
+%
+
+The {\tt $CHEMCASE$} option should also be changed in the {\em run\_ref} 
+file.
+
+\section{Other Namelist Variables} \label{sec:NamelistVariables}
+
+Three important namelist variables are used to set the number of
+processors.
+They are {\tt $numWorkerProcs$}, {\tt $numLonProcs$} and {\tt $numLatProcs$}, and
+they satisfy the relation 
+%
+$$numWorkerProcs = numLonProcs \times numLatProcs.$$
+%
+To execute the code, the number of processors {\tt $Ncpus$} is given
+by {\tt $Ncpus = numWorkerProcs + 1$}.
+
+The resolution of the run is set using the following variables: 
+{\tt $i1\_gl$} and {\tt $i2\_gl$} (first and last index of the global longitude); 
+{\tt $ju1\_gl$} and {\tt $jv1\_gl$} (first global `u` and `v` latitude); 
+{\tt $j2\_gl$} (last global `u\&v` latitude); {\tt $kl\_gl$} and 
+{\tt $k2\_gl$} (first and last global altitude).
+
+\begin{remark}
+The resolution of the run that is specified by the above variables should 
+match the resolution of the metfield files.  
+Metfield files can be found on {\tt discover} in
+%
+\begin{verbatim}
+    /discover/nobackup/projects/gmi/gmidata2/input/metfields/TYPE/RESOLUTION/
+\end{verbatim}
+%
+
+and on explore/palm in
+%
+\begin{verbatim}
+     /explore/nobackup/projects/gmi/gmidata2/input/metfields/TYPE/RESOLUTION/
+\end{verbatim}
+%
+
+The metfield files are listed in a file specified by the namelist variable 
+{\tt $met\_filnam\_list$}.
+\end{remark}
+
+
+\section{Restart Capabilities} \label{sec:Restart}
+To restart from a previous run, in the nlGmiRestart section of the input namelist file, set
+%
+\begin{verbatim}
+     pr_restart: T
+     pr_rst_period_days: #.#d0,
+\end{verbatim}
+%
+   Replace $"\#.\#"$ with whatever you want the time period to be. \\
+%
+   Note that pr\_rst\_period\_days when converted to seconds, must be
+   a multiple of mdt, the time increment for reading in new met data.
+%
+Restart netCDF output will be written to a file named
+%
+\begin{verbatim}
+     <problem_name>.rst.nc
+\end{verbatim}
+%
+   Set the resource file variable, {\em do\_overwrt\_rst} as appropriate
+   (i.e., do you want to keep just a single record of restart data or
+   multiple records?).
+
+\vskip 1.0cm
+
+\noindent
+{\bf To create a new namelist input file to use for running from a
+restart point:}
+%
+\begin{enumerate}
+\item Section 7 provides information on a script called {\em MakeNameLists.py} that
+can create multiple namelist files and handle restarting.
+\item Alternatively, you can execute the {\em mk\_rstnl}
+      ("make restart namelist") script as follows
+\begin{verbatim}
+     $gmi/Shared/GmiScripts/mk_rstnl \
+        -onl <old_nlfile>   -nnl <new_nlfile>  \
+        -rst <rst_ncfile>   -eda <endGmiDate>  -eti <endGmiTime> \
+       [-npn <problem_name>]
+
+   The first four arguments/value pairs are required
+
+     old_nlfile   : name of the namelist input file that was used to get to
+                    the restart point
+     new_nlfile   : name to call the new namelist input file that will be
+                    used to continue from the restart point
+     rst_ncfile   : name of the netCDF restart file that was written out at
+                    the restart point
+     endGmiDate   : ending date for the new run; note that begGmiDate will 
+                    be set by the script to what endGmiDate was when the 
+                    netCDF restart file was written out
+     endGmiTime   : ending time for the new run; note that begGmiTime will 
+                    be set by the script to what endGmiTime was when the 
+                    netCDF restart file was written out
+
+   The last argument/value pair is optional
+
+     problem_name : new problem name to use in the new namelist input file
+\end{verbatim}
+\end{enumerate}
+%
+For example
+\begin{verbatim}
+     $gmi/Shared/GmiScripts/mk_rstnl -onl nlfile.in.old  -nnl nlfile.in.new \
+       -rst ncfile.rst.nc  -eda 20061231 -eti 240000
+\end{verbatim}
+%
+This script automatically creates a new namelist file with various namelist
+variables modified or added to accomodate the restart.  The script uses
+ information from the netCDF restart file to accomplish this.  Values that
+the script will use are output to the screen; these should be reviewed to
+verify that they are what you expected them to be.
+\newline
+\newline
+The namelist variables that the script will potentially modify or add are:
+%
+\begin{verbatim}
+     nlGmiControl =>
+       problem_name        : set to value provided by -npn script argument;
+                             otherwise unchanged from value in old_nlfile
+       begGmiDate          : set to endGmiDate at restart point
+       begGmiTime          : set to endGmiTime at restart point
+       endGmiDate          : set to value provided by -tfi script argument
+       endGmiTime          : set to value provided by -tfi script argument
+       gmi_sec             : set to ending value at restart point
+
+     nlGmiMetFields   =>
+       met_infile_num      : set to ending value at restart point
+       mrnum_in            : set to ending value at restart point - 1
+       tmet1               : set to tmet2        at restart point
+
+     nlGmiDiagnostics  =>
+       pr_qqjk             : set to ending value at restart point
+
+     nlGmiRestart =>
+       rd_restart          : set to T
+       restart_infile_name : set to value provided by -rst script argument
+\end{verbatim}
+%
+Note that restart dumps can only occur at the end of a met data cycle and
+you should edit the new namelist input file directly if you want to change
+any other namelist variables not listed above.
+
+If there is more than one record in the restart file, the default is to
+use the last one.  This can be changed by setting the namelist variable,
+{\em restart\_inrec}, to a different record number.
+
+\vskip 1.0cm
+
+\noindent
+{\bf To resume running from the restart point: }
+%
+\begin{itemize}
+\item Start the run just as you normally would, but this time use the new
+   restart namelist input file you created above.
+\end{itemize}

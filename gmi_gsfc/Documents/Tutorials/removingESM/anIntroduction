@@ -1,0 +1,371 @@
+!---------------------------------------------------------------------
+!  NASA/GFSC, SIVO, Code 610.3
+!---------------------------------------------------------------------
+!
+!BOI
+! !TITLE: {\huge \bf Removal of the ESM Package from GMI}
+!
+! !AUTHORS: Jules Kouatchou
+!
+! !AFFILIATION:  NASA Goddard Space Flight Center} \\ Software Integration and Visualization Office \\ Advanced Software Technology Group \\ Code 610.3 \\  Greenbelt, MD 20771 \\  {Jules.Kouatchou-1@nasa.gov
+!
+! !DATE: December 3, 2007
+!
+! \begin{abstract}
+! We describe how we removed the ESM package in the GMI code.
+! The process involved the rewriting of domain decomposition and communication
+! routines to simplify the complexity of operations and how domain specific
+! data are passed to GMI components.
+! \end{abstract}
+!
+! !INTRODUCTION: Introduction 
+! The Earth System Model (ESM) package was developed at 
+! Lawrence Livermore National Laboratory (LLNL) to allow several
+! Earth Science numerical models to run at the same time. 
+! The ESM code is a system of individual codes or modules
+! each of which has been constructed to describe a specific subsystem
+! characterizing the environment in which we live. In the ESM code,
+! these modules are coupled together such that each of them may provide
+! boundary conditions for the others. Within a specific module, that module
+! is considered to be more or less autonomous of the other modules. 
+! It was assumed that the models would be integrated on limited computing 
+! resources and the ESM package would then allocate appropriate resources 
+! to each model.
+!
+! \vskip 0.5cm
+!
+! At an early stage, the GMI code was implemented using ESM. This has allowed 
+! the ability to run GMI not only on single processor but also with multiple
+! processors using message passing \cite{Kouatchou-etal}. 
+! However, the GMI code, containing the ESM package, has been the only model 
+! managed by ESM. This has added a lot of complexity in the initialization 
+! process: reading namelist file, domain decomposition, variable allocations, etc.
+!
+! \vskip 0.5cm
+!
+! Recently, we started the process of modernizing the GMI code by making it
+! more readable, flexible, expendable, and maintainable. In particular, we refactored
+! all the major components of the code. So far, we have componentized most of the
+! code and major components (such as Emission, Chemistry, Deposition)
+! are self-contained and completely isolated from each
+! other. We designed and wrote simple interfaces to access components
+! \cite{Kouatchou-etal07}.
+!
+! \vskip 0.5cm
+!
+! It quickly became apparent that for the GMI code to be fully modernized, the ESM
+! package would have to be completely removed. Our goal was to simplify the 
+! whole GMI initialization without going through several layers. 
+! In this report, we decribe the process of eliminating the ESM package
+! while maintaining the integrity of the code.
+!
+! \vskip 0.5cm
+!
+! This report is organized as follow. In Section \ref{sec:meth}, we describe the
+! the approach we used for this work. Section \ref{sec:sample} presents a sample
+! code, namely the GMI main program, to show the impact of our effort on the
+! code simplification and readability. Concluding remarks appear in Section
+! \ref{sec:conclusion}. Finally in the appendix section, we provide the new namelist
+! setting and list all the routines
+! we modified or wrote.
+!
+! \section{Methodology} \label{sec:meth}
+! Before attempting to eliminate the ESM package, it was important to understand
+! its role and to identify the kind of service it provides to the GMI code.
+! Basically, ESM reads the first section of the namelist file (containing information
+! such as the problem name, the number of days of integration, etc.).
+! It uses the read data to determine the total number of time steps.
+! ESM also provides routines to carry out the horizontal domain decomposition
+! and low level routines for inter-processor communications.
+!
+! \vskip 0.5cm
+!
+! \noindent
+! {\tt Remark:} {\em It is important to note that ESM assumes an $n+1$ 
+! processor decomposition, i.e., one root processor (only involved in I/O) 
+! and $n$ worker processors (doing computations). Our work here does not
+! change this setting.}
+!
+! \vskip 0.5cm
+!
+! We did not try to start from scratch. We instead chose to use ESM as a basis
+! for our work to simplify it and improve its functionality. Our initial task was to: 
+!%
+! \begin{enumerate}
+! \item Identify the calling sequence of ESM main routines and how they interact
+!       with the GMI code.
+! \item List all the necessary variables (needed by the GMI components)
+!       involved in the domain decomposition. We can mention for instance:
+!       subdomain dimensions, subdomain neighbors, mapping of subdomain to
+!       processors, etc. 
+! \item List all the communication and domain decomposition routines and find 
+!       ways to remove any reference to non GMI modules in their calls.
+! \end{enumerate}
+! %
+! After the above was done, we created two derived types whose member variables 
+! (we also wrote routines to manipulate and access them)
+! contain subdomain specific information:
+!%
+! \begin{description}
+! \item[gmiGrid:] for subdomain grid data, i.e., dimensions with respect to the 
+!      the global domain (see the module {\tt GmiGrid\_mod} in the appendix section).
+! \item[gmiDomain:] for subdomain/processor information, for instance
+!      neighbors of a given subdomain/processor, subdomain/processor identifier,
+!      etc. (see the module {\tt GmiDomainDecomposition\_mod} in the appendix
+!      section).
+! \end{description}
+!%
+!%
+! We also redesigned the whole message passing initialization by writing routines to:
+! (1) get and read the namelist file, and (2) do domain decomposition. 
+! In addition, we rewrote all the low level inter-processor communication routines.
+!
+! \vskip 0.5cm
+!
+! We also removed the {\em ESM} section from the namelist file and deleted
+! more than thrity-five variables in that section.
+! We only kept five variables that were moved to the {\em nlGmiControl}
+! section (see Appendix \ref{app:namelist}).
+
+! The initialization of GMI (as far as domain decomposition is concerned) is 
+! carried out in three steps:
+!
+! \begin{verbatim}
+!       - Message passing initialization
+!       - Reading of the namelist file to obtain global domain information
+!       - Domain decomposition
+! \end{verbatim}
+!%
+! In the following section, we present the GMI main code to show how the
+! above calling sequence is done.
+!
+! \vskip 0.5cm
+!
+! \noindent
+! {\tt Remark:} {\em In this task, we follow whenever possible SIVO coding
+! standards: naming files/routines/variables, commenting the code, etc.
+! The new file we created (also listed in the appendix section) are in the
+! directory gmi\_gsfc/Shared/GmiCommunications.}
+!
+! \section{Sample Code} \label{sec:sample}
+! In this section, we present the new GMI main program to show how the code
+! became simple while being mordernized.
+!
+! \begin{verbatim}
+!      program GmiMain
+!
+!      use GmiGrid_mod                  , only : t_gmiGrid
+!      use GmiFileUnit_mod              , only : InitializeFileUnitNumbers
+!      use GmiPrintError_mod            , only : GmiPrintError
+!      use GmiMessageInit_mod           , only : initializeMPI
+!      use GmiTimeControl_mod           , only : t_GmiClock
+!      use GmiMessageFinal_mod          , only : finalizeMPI
+!      use GmiRootProcessor_mod         , only : gmiRootProcessor
+!      use GmiEmissionMethod_mod        , only : t_Emission
+!      use GmiControlAdvance_mod        , only : gmiControlAdvance
+!      use GmiMessagePassing_mod        , only : synchronizeGroup, stopCode
+!      use GmiDiffusionMethod_mod       , only : t_Diffusion
+!      use GmiChemistryMethod_mod       , only : t_Chemistry
+!      use GmiControlFinalize_mod       , only : gmiControlFinalize
+!      use GmiReadNamelistFile_mod      , only : getNamelistFile, gmiReadNamelistFile
+!      use GmiDepositionMethod_mod      , only : t_Deposition
+!      use GmiConvectionMethod_mod      , only : t_Convection
+!      use GmiControlInitialize_mod     , only : gmiControlInitialize
+!      use GmiDomainDecomposition_mod   , only : t_gmiDomain, domainDecomposition
+!      use GmiDomainDecomposition_mod   , only : t_gmiDomain, Set_communicatorWorld
+!      use GmiDomainDecomposition_mod   , only : Set_iAmRootProc, Set_procID, Set_rootProc
+!      use GmiSpcConcentrationMethod_mod, only : t_SpeciesConcentration
+!
+!      implicit none
+!
+!#     include "mpif.h"
+!#     include "gmi_chemcase.h"
+!#     include "gmi_dims.h"           ! SHOULD BE REMOVED LATER
+!
+!      integer                       :: msg3d_outer_flag
+!      integer                       :: commuWorld, ierr
+!      integer                       :: rootProc, procID, numProcessors
+!      CHARACTER (len=128)           :: gmiNamelistFile
+!      logical                       :: iAmRootProc
+!
+!      type (t_gmiGrid             ) :: gmiGrid
+!      type (t_GmiClock            ) :: gmiClock
+!      type (t_Emission            ) :: Emission
+!      type (t_Chemistry           ) :: Chemistry
+!      type (t_Diffusion           ) :: Diffusion
+!      type (t_gmiDomain           ) :: gmiDomain
+!      type (t_Deposition          ) :: Deposition
+!      type (t_Convection          ) :: Convection
+!      type (t_SpeciesConcentration) :: SpeciesConcentration
+!
+!      !--------------------
+!      ! MPI initializations
+!      !--------------------
+!
+!      call initializeMPI (commuWorld)
+!
+!      ! Get the number of processors
+!      call MPI_Comm_Size(commuWorld, numProcessors, ierr)
+!      if (ierr /= MPI_SUCCESS) then
+!         call stopCode (commuWorld, " MPI ERROR  for size")
+!      end if
+!
+!      ! Get the processor rank
+!      call MPI_Comm_Rank(commuWorld, procID, ierr)
+!      if (ierr /= MPI_SUCCESS) then
+!         call Stopcode (commuWorld, " MPI ERROR  for rank")
+!      end if
+!
+!      ! Determine the root processor
+!      rootProc    = 0
+!      iAmRootProc = gmiRootProcessor(commuWorld)
+!
+!      ! Populate the gmiDomain derived type
+!
+!      call Set_procID           (gmiDomain, procID     )
+!      call Set_rootProc         (gmiDomain, rootProc   )
+!      call Set_iAmRootProc      (gmiDomain, iamRootProc)
+!      call Set_communicatorWorld(gmiDomain, commuWorld )
+!
+!      !--------------------------------
+!      ! Get the chemical mechanism name
+!      !--------------------------------
+!
+!      call Chem_Case_Name( )
+!
+!      call InitializeFileUnitNumbers ()
+!
+!      msg3d_outer_flag = 1
+!
+!      !------------------------------
+!      ! Initial namelist file reading
+!      !------------------------------
+!
+!      call getNamelistFile(gmiNamelistFile, commuWorld)
+!
+!      call gmiReadNamelistFile(gmiNamelistFile, gmiGrid, gmiDomain, gmiClock)
+!
+!      !---------------------
+!      ! Domain decomposition
+!      !---------------------
+!
+!      call domainDecomposition(gmiDomain, gmiGrid, numProcessors)
+!
+!      !--------------------------
+!      ! Initialize the components
+!      !--------------------------
+!
+!      call gmiControlInitialize(SpeciesConcentration, Emission, Chemistry, &
+!     &               Deposition, Convection, Diffusion, gmiClock, gmiGrid, &
+!     &               gmiDomain, gmiNamelistFile, pr_diag, num_chem, num_sad, &
+!     &               num_qjs, num_qjo, num_qks, num_active, num_const_inrecs, &
+!     &               num_molefrac, naero, ndust)
+!
+!      write(6,*) " Finished Reading Components", procID
+!
+!      !--------------------------
+!      ! Advance the model in time
+!      !--------------------------
+!
+!      call gmiControlAdvance  (SpeciesConcentration, Emission, Chemistry, &
+!     &               Deposition, Convection, Diffusion, gmiClock, gmiGrid,&
+!     &               gmiDomain, pr_diag, ndust, naero, num_qjo, num_qjs,  &
+!     &               num_qks, num_sad, num_active, num_molefrac, num_chem, &
+!     &               num_const_outrecs, num_drydep_outrecs, num_wetdep_outrecs, &
+!     &               num_emiss_outrecs, num_tend_outrecs, msg3d_outer_flag)
+!
+!      !------------------------
+!      ! Finalize the components
+!      !------------------------
+!
+!      call gmiControlFinalize (gmiDomain, pr_diag)
+!
+!      ! Finalize MPI
+!      call finalizeMPI(commuWorld)
+!
+!      end program GmiMain
+! \end{verbatim}
+!
+! \section{Conclusion} \label{sec:conclusion}
+! We described the process of removing the ESM package from the GMI code.
+! Apart from simplify the GMI initialization process, the removal has resulted 
+! in many other benefits. Some of them are:
+! %
+! \begin{enumerate}
+! \item The deletion of several namelist variables.
+! \item The removal of several common blocks.
+! \item All the component interfaces have in their argument lists the two derived
+!       types to access domain/processor data.
+! \item We are now able to write self-contained modules to create and manipulate
+!       netCDF output files.
+! \end{enumerate}
+! %
+! In this work, we did not address the issue of the $n+1$ processor decomposition.
+! What we did offers us a framework to make changes so that all the available
+! processors participate in the model integration.
+!
+!
+! \begin{thebibliography}{99}
+! \bibitem{Kouatchou-etal} J. Kouatchou, B. Das and H. Oloso,
+!  Global Modeling Initiative: Tutorial and User's Guide,
+!  online documentation available at
+!  {\tt http://gmi.gsfc.nasa.gov/tutorial/index.html}.
+! \bibitem{Kouatchou-etal07} J. Kouatchou, T. Clune, H. Oloso, S. Zhou, M. Damon,
+!  and B.Womack,
+!  Refactoring and componentizing legacy codes: GMI case study, in preparation.
+! \end{thebibliography}
+!
+! \appendix
+!
+! \section{New Namelist Setting} \label{app:namelist}
+! The old namelist file had a section containing variables read in by the ESM
+! package. After removing ESM, we deleted the {\em ESM} section from the namelist
+! file and moved the variables needed by GMI to the {\em nlGmiControl} section.
+! We also renamed some namelist variables:
+!%
+! \begin{table}
+! \begin{center}
+! \begin{tabular}{|l|l|} \hline\hline
+! {\bf Old variable names} & {\bf New variable names} \\ \hline\hline
+! NP\_actm   & numWorkerProcs  \\ 
+! NPI\_actm  & numLonProcs  \\ 
+! NPJ\_actm  & numLatProcs  \\ 
+! oneprcsr (integer)      & oneProcRun (logical)  \\ \hline\hline
+! \end{tabular}
+! \caption{New names for namelist variables.}
+! \label{tab:nlSection}
+! \end{center}
+! \end{table}
+!%
+! A sample {\em nlGmiControl} section looks like:
+! %
+! \begin{verbatim}
+! &nlGmiControl
+!   problem_name   = 'TestingNamelist',
+!   oneProcRun     = F,
+!   numWorkerProcs = 63,
+!   numLonProcs    = 9,
+!   numLatProcs    = 7,
+!   tbegin_days    = 0.0d0,
+!   tfinal_days    = 1.d0,
+!   start_hms      = 000000,
+!   start_ymd      = 20040101,
+!   do_ftiming     = T,
+!   gmi_nborder    = 4,
+!   i1_gl          = 1,
+!   i2_gl          = 144,
+!   ju1_gl         = 1,
+!   jv1_gl         = 1,
+!   j2_gl          = 91,
+!   k1_gl          = 1,
+!   k2_gl          = 42,
+!   num_species    = 124,
+!   tdt            = 1800.0d0,
+!   leap_year_flag = -1 /
+! \end{verbatim}
+!%
+! Note that numWorkerProcs = numLonProcs $\times$ numLatProcs, and that oneProcRun
+! is a logical variable used to determine if the run in on one processor or not.
+! If oneProcRun = T, then numWorkerProcs = numLonProcs = numLatProcs = 1
+!EOI 
+!---------------------------------------------------------------------

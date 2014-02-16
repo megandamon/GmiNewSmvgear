@@ -1,0 +1,98 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# $Id: savset,v 1.2 2011-08-09 22:12:59 mrdamon Exp $
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   savset
+#
+# DESCRIPTION
+#   This script creates a clean copy of the Gem/Gmimod setkin files in a tmp
+#   directory, tars it up into a tarfile named setsav.tar, and puts this
+#   file in the directory where your gem directory resides.  The tmp
+#   files are then deleted.  If you are on a NERSC machine, it also stores
+#   a copy of the tarfile in hpss/archive.  Be careful, as it will overwrite
+#   any pre-existing setsav.tar file that you might have.
+#
+#   ALSO NOTE THAT THIS SCRIPT DOES NOT STORE [.f] FILES.  THIS SHOULD BE
+#   WHAT IS DESIRED AS ALL gem/gmimod SOURCE FILES SHOULD BE NAMED
+#   [.F90|.c|.h].
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use English;
+use Env;
+use File::Find;
+
+
+my $host_machine = "$ENV{HOSTMACH}";
+my $gem_dir      = "$ENV{GMIHOME}";
+my $tmp_dir;
+
+
+if (($host_machine eq "cheetah_machine") ||
+    ($host_machine eq "seaborg_machine")) {
+  $tmp_dir = "$ENV{SCRATCH}/$USER.$PID";
+}
+else {
+  $tmp_dir = "/tmp/$USER.$PID";
+}
+
+
+print "\nWorking...\n\n";
+
+
+mkdir ($tmp_dir, 0700);
+`/bin/cp -r $gem_dir/actm/gmimod/chem/setkin         $tmp_dir`;
+`/bin/cp -r $gem_dir/actm/gmimod/chem/include_setkin $tmp_dir`;
+
+
+print "NOTE:  ALL SOURCE FILES SHOULD BE NAMED [.F90|.c|.h],\n";
+print "       [.f] FILES ARE NOT SAVED.\n\n";
+
+
+chdir $tmp_dir;
+
+
+`/bin/rm -f setkin/Makefile`;
+`/bin/rm -f setkin/Makefile.bak`;
+`/bin/rm -f setkin/Mkdepend_log`;
+`/bin/rm -f setkin/*.T`;
+`/bin/rm -f setkin/*.a`;
+`/bin/rm -f setkin/*.f`;
+`/bin/rm -f setkin/*.l`;
+`/bin/rm -f setkin/*.mod`;
+`/bin/rm -f setkin/*.o`;
+`/bin/rm -f setkin/*.rif`;
+
+
+`/bin/tar cf setsav.tar setkin include_setkin`;
+
+
+chdir $gem_dir;
+chdir "..";
+`/bin/cp $tmp_dir/setsav.tar .`;
+
+
+`/bin/rm -fr $tmp_dir`;
+
+
+if ($host_machine eq "seaborg_machine") {
+  print "Storing a copy of setsav.tar in hpss/archive.\n\n";
+  `/usr/common/mss/bin/hsi archive put setsav.tar`;
+}
+
+
+print "Done.\n\n";
+
+
+exit 0;
+

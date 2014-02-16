@@ -1,0 +1,228 @@
+
+\chapter[Script Tools]{Script Tools} \label{chap:script}
+
+\section{Internal Scripts} \label{section:internal}
+The GMI code comes with several scripts that allow users to perform 
+commands such as searching from words within the code, counting the
+number of lines in the source code, constructing a restart input
+namelist file, etc.
+%
+All the scripts are located in the directory
+{\em Shared/GmiScripts} and can be executed from
+anywhere in the code. They are:
+%
+\begin{description}
+\item[check\_ver] searches for all file names in the current directory
+   containing "search\_string" and replaces the first instance of
+   "search\_string" with "replace\_string". \\
+   Usage:  \mbox{ chname  search\_string  replace\_string}
+\item[clgem] deletes a number of the files created when {\em gmi} is run.
+\item[doflint] runs the flint Fortran source code analyzer on the GMI code. \\
+   It can be run on any machine where flint is available (e.g., tckk), and
+   where the GMI code has been installed and compiled. \\
+   Usage: \mbox{ doflint }
+\item[gmi\_fcheck] can be used to run the Flint source code analyzer on
+   gmi\_gsfc.
+\item[gmi\_fcheckrm] can be used after "gmi\_fcheck" is run on the gmi\_gsfc
+   code to strip out Flint messages that are of no consequence.  
+   Gmi\_fcheckrm uses gmi\_fcheck.out as its input file, and produces a new 
+   file called gmi\_fcheckrm.out.  
+\item[grabf] grabs all of the ".f90" files and puts them in $\$$gmi/CODE.
+   These files then can be ftped to a machine with access to the FORTRAN
+   Lint (flint) source code analyzer tool.
+\item[lastmod] lists all files in reverse order of 
+   when they were last modified. It is useful for determining which 
+   routines a user has modified since they were last installed in the code. \\
+   Usage:  lastmod [tail\_num]
+\item[lastmod\_all] lists all files in reverse order of when 
+   they were last modified. It is useful for determining which routines 
+   a user has modified since they were last installed in the code. \\
+   Usage:  lastmod\_all [tail\_num]
+\item[line\_count\_gmi] does a variety of line counts on the GMI source code.
+\item[list\_species] lists all the species labels for the selected chemical
+    mechanism (environment variable CHEMCASE). \\
+   Usage: list\_species
+\item[lnsdat] (lns (symbolic link) data) symbolically links the GMI input 
+   file directory to "gmi\_data" in the current directory.  
+   The GMI namelist file can then point to a generic gmi\_data directory.
+\item[mk\_rstnl] (make restart namelist) constructs a restart input namelist 
+   file (see Section \ref{sec:Restart} for more information).
+\item[savit] creates a clean copy of a GMI code tree (considered only
+   files with extension [.F90|.c|.h]) in a tmp
+   directory, tars it up into a tarfile named gmisav.tar, and puts this
+   file in the directory where your gmi directory resides.  The tmp
+   files are then deleted.
+\item[savset] creates a clean copy of the GMI setkin files
+   (considered only files with extension [.F90|.c|.h]) in a tmp
+   directory, tars it up into a tarfile named setsav.tar, and puts this
+   file in the directory where your gmi directory resides.  The tmp
+   files are then deleted.
+\item[seabf] searches through the ".F90" source files for a
+   particular string (case insensitive). Output comes to the screen
+   unless an optional second file\_name argument is provided. \\
+   Usage: seabf search\_string [file\_name]
+\item[seabf\_word] searches through the ".F90" source files for a
+   particular word (case insensitive).  Output comes to the screen
+   unless an optional second file\_name argument is provided. \\
+   Usage:  seabf\_word search\_string [file\_name]
+\item[seac] searches through the .c source files for a
+   particular string (case insensitive).  Output comes to the screen
+   unless an optional second file\_name argument is provided. \\
+   Usage:  seac search\_string [file\_name]
+\item[seah] searches through the ".h" include files for a
+   particular string (case insensitive). Output comes to the screen unless
+   an optional second file\_name argument is provided. \\
+   Usage:  seah search\_string [file\_name]
+\item[seah\_word]  searches through the ".h" include files for a
+   particular word (case insensitive).  Output comes to the screen unless
+   an optional second file\_name argument is provided. \\
+   Usage:  seah\_word search\_string [file\_name]
+\item[sealf] searches through the ".f90" source files for a
+   particular string (case insensitive).  Output comes to the screen
+   unless an optional second file\_name argument is provided. \\
+   Usage:  sealf search\_string [file\_name]
+\item[seamf] searches through the "Makefile" and  "Makefile.cpp" source files
+   for a particular string (case insensitive).  Output comes to the screen
+   unless an optional second file\_name argument is provided. \\
+   Usage:  seamf search\_string [file\_name]
+\end{description}
+
+
+\section{Production Tools} \label{section:production}
+There is a collection of python scripts for doing GMI production runs. 
+These scripts create namelist files for each segment of the production run 
+(usually date segments), start each segment of a production run,
+monitor the runs, and sends status updates to a designated email address.
+The following scripts can be used seperately or together for doing productions
+runs:
+\begin{description}
+\item[MakeNameLists.py] creates namelist files by using a base namelist \\ 
+\item[ChainRuns.py] runs multiple segments of a GMI production run, monitors 
+   the progress, and sends status updates
+\end{description}
+
+The first step in using either of these scripts is to edit the 
+{\em ExperimentConstants.py} file.  The following are the configurable options
+inside this file:
+\begin{description}
+\item[MAILTO] a single email address or a comma seperated list of email addresses to send updates to \\
+\item[NUM\_CPUS] total number of processors (slaves+master) \\
+\item[BASE\_NAMELIST] the base namelist file \\
+\item[NUM\_NAMELISTS] the number of total namelists to be create. We suggest setting this to 12 \\
+\item[START\_MONTH] usually "jan" for january; all other months follow the same three letter abbreviation \\
+\item[NUM\_ARGS] only developers should change this option
+\item[NAMELISTS] the name of the file the will contain a list of all the namelists in the production run; 
+  they are listed in the order of execution \\
+\item[RUNREF] the base batch file for submission to the discover PBS batch system \\
+\item[QUEUEMINUTESALLOWED] the number of minutes a segment should take to run, 
+   including the estimated wait time in the queue
+\end{description}
+
+Next, a run directory should be created.  The run directory should have a sample RUNREF file and a
+BASE\_NAMELIST in it; in this example we use the files {\em run\_ref} and {\em sample.in}, respectively.
+
+In the {\em run\_ref} file, make sure you change the {\em group\_list}, the {\em workDir} (which is the run directory), 
+and the path to the executable (GEMHOME).  Also, check the number of cpus.
+
+For the BASE\_NAMELIST file, check that the restart file is correct, and other input file names (anything that contains a string {\em infile\_name}).
+This file will be used as a base for all your production segments. The job name, date, restart file (previous month), and the number of days to run will be
+changed by the script. 
+
+\begin{remark}
+If you limit the number of segments to 12 (one year) you should not have to make any other
+modifications EXCEPT when you are intending to run a February segment with 29 days. You will have to change the namelist variable (after you run
+the {\em MakeNameLists.py} script) to tfinal\_days to 29.  Users are urged to use caution when using the {\em MakeNameLists.py} and check their work carefully.
+\end{remark}
+
+Once you've prepared the run directory execute the {\em MakeNameLists.py} script from the run directory (substitute your own directory names here):
+\begin{verbatim}
+        % cd runDirectory
+        % python /yourpath/MakeNameLists.py -d `pwd`
+\end{verbatim}
+
+You should see output similiar to this:
+
+\begin{verbatim}
+        nameListPath = /yourpath
+        nameListFile = sample.in
+        numberOfNameLists = 12
+        startMonth = jan
+        startYear = 1994
+        start month 0 jan
+        gmit_sample_1994_feb feb1994.list 28 940201 940228 gmit_sample_1994_jan
+        gmit_sample_1994_mar mar1994.list 31 940301 940331 gmit_sample_1994_feb
+        gmit_sample_1994_apr apr1994.list 30 940401 940430 gmit_sample_1994_mar
+        gmit_sample_1994_may may1994.list 31 940501 940531 gmit_sample_1994_apr
+        gmit_sample_1994_jun jun1994.list 30 940601 940630 gmit_sample_1994_may
+        gmit_sample_1994_jul jul1994.list 31 940701 940731 gmit_sample_1994_jun
+        gmit_sample_1994_aug aug1994.list 31 940801 940831 gmit_sample_1994_jul
+        gmit_sample_1994_sep sep1994.list 30 940901 940930 gmit_sample_1994_aug
+        gmit_sample_1994_oct oct1994.list 31 941001 941031 gmit_sample_1994_sep
+        gmit_sample_1994_nov nov1994.list 30 941101 941130 gmit_sample_1994_oct
+        gmit_sample_1994_dec dec1994.list 31 941201 941231 gmit_sample_1994_nov
+\end{verbatim}
+
+You may need to make a change to the {\em sample.in} namelist.  
+Open the {\em namelists.list} file and change the name of the first namelist to be consistent with the rest. For example:
+(you can avoid this step by naming the BASE\_NAMELIST something like gmit\_sample\_1994\_jan.in)
+
+Before:
+
+\begin{verbatim}
+        sample.in
+        gmit_sample_1994_feb.in
+        gmit_sample_1994_mar.in
+        gmit_sample_1994_apr.in
+        gmit_sample_1994_may.in
+        gmit_sample_1994_jun.in
+        gmit_sample_1994_jul.in 
+        gmit_sample_1994_aug.in
+        gmit_sample_1994_sep.in
+        gmit_sample_1994_oct.in
+        gmit_sample_1994_nov.in
+        gmit_sample_1994_dec.in
+\end{verbatim}
+
+After:
+
+\begin{verbatim}
+        gmit_sample_1994_jan.in
+        gmit_sample_1994_feb.in
+        gmit_sample_1994_mar.in 
+        gmit_sample_1994_apr.in
+        gmit_sample_1994_may.in
+        gmit_sample_1994_jun.in
+        gmit_sample_1994_jul.in
+        gmit_sample_1994_aug.in
+        gmit_sample_1994_sep.in 
+        gmit_sample_1994_oct.in
+        gmit_sample_1994_nov.in
+        gmit_sample_1994_dec.in
+\end{verbatim}
+
+
+Rename the file that you just changed. For example:
+
+\begin{verbatim}
+        %mv sample.in gmit_sample_1994_jan.in
+\end{verbatim}
+
+\begin{remark}
+Make sure you have ALL your metFields files in the run directory, as the {\em ChainRuns.py}
+script assumes this location.
+\end{remark}
+
+Modify your crontab to run the {\em ChainRuns.py} script at the proper time. 
+For additional documentation on the crontab tool please reference:
+
+\begin{verbatim}
+        http://www.adminschoice.com/docs/crontab.htm
+\end{verbatim}
+
+Here is an example of a ChainRuns crontab entry:
+
+\begin{verbatim}
+        20 11 15 6 * /usr/bin/python /yourPath/ChainRuns/ChainRuns.py -d runDirectory >> /yourPath/Logs/fromCron.out
+\end{verbatim}
+
+In this example, the {\em ChainRuns.py} script will run at 11:20 am on June 15th.

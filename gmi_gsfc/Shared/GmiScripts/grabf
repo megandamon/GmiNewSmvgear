@@ -1,0 +1,40 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   grabf (grab all ".f" files)
+#
+# DESCRIPTION
+#   This script grabs all of the GMI ".f90" files and puts them in $gmi/CODE.
+#   These files then can be ftped to a machine with access to the FORTRAN
+#   Lint (flint) source code analyzer tool.
+#
+#=============================================================================
+#
+
+
+set tmp_dir = /tmp/jrt.$$
+set tar_nam = fcode_$$.tar
+
+mkdir $tmp_dir
+
+
+find $GMIHOME -name "*.f90" -exec /bin/cp -p "{}" $tmp_dir \;
+
+
+cd $tmp_dir
+
+tar cf ~/$tar_nam *.f90
+
+cd
+
+/bin/rm -fr $tmp_dir
+
+
+exit
+

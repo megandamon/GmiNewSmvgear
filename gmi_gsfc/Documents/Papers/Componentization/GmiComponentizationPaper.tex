@@ -1,0 +1,792 @@
+%------------------------ PREAMBLE --------------------------
+%\documentclass[landscape, 11pt]{article}
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{hangcaption}
+\textheight     9in
+\topmargin      0pt
+\headsep        1cm
+\headheight     0pt
+\textwidth      6in
+\oddsidemargin  0in
+\evensidemargin 0in
+\marginparpush  0pt
+\pagestyle{myheadings}
+\markboth{}{}
+%-------------------------------------------------------------
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\setlength{\baselineskip}{11pt}
+ 
+%--------------------- SHORT-HAND MACROS ----------------------
+\def\bv{\begin{verbatim}}
+\def\ev{\end{verbatim}}
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bi{\begin{itemize}}
+\def\ei{\end{itemize}}
+\def\bn{\begin{enumerate}}
+\def\en{\end{enumerate}}
+\def\bd{\begin{description}}
+\def\ed{\end{description}}
+\def\({\left (}
+\def\){\right )}
+\def\[{\left [}
+\def\]{\right ]}
+\def\<{\left  \langle}
+\def\>{\right \rangle}
+\def\cI{{\cal I}}
+\def\diag{\mathop{\rm diag}}
+\def\tr{\mathop{\rm tr}}
+%-------------------------------------------------------------
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+%-------------------------------------------------------------
+
+\begin{document}
+\title{\huge \bf Refactoring and Componentizing Legacy Codes: GMI Case Study}
+\author{{\sc Jules Kouatchou, Thomas Clune, Hamid Oloso,} \\ 
+{\sc William Sawyer, Shujia Zhou, Megan Damon, and Carlos Cruz} \\
+NASA Goddard Space Flight Center \\
+SIVO/ASTG - Code 610.3 \\ Greenbelt, MD 20771}
+\date{}
+\maketitle
+
+\begin{abstract}
+  As Earth science applications grow increasingly complex over time,
+  maintenance of such software becomes a significant challenge.  In
+  general, the software subsystems were designed, implemented and
+  integrated (over an extended period of time) by different groups
+  that did not follow the same software design standard.  The
+  objective was understandably to obtain scientific results quickly,
+  but this goal was often achieved at the expense of good software
+  practices.  With that pattern of development, the cost of
+  incremental changes to the applications grow ominously large.  This
+  increase in effort, tends to squeeze development resources and
+  largely prevent any systematic attempt to reintroduce better
+  software practices and thereby enhance the maintainability of the
+  software.  In this paper, we present the process we used to
+  incrementally refactor and componentize the Global Modeling
+  Initiative code to make it more understandable, maintainable,
+  flexible and extensible. The resulting product not only preserves
+  the scientific integrity of the original code but also extends the
+  capabilities of the code for several applications.
+\end{abstract}
+
+%\newpage
+
+%\tableofcontents
+
+%\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+The Software Integration and Visualization Office
+(SIVO)\footnote{http://sivo.gsfc.nasa.gov} at NASA Goddard Space
+Flight Center provides (among other activities) leadership in the
+development of advanced scientific software in support of NASA
+modeling programs primarily in Earth Science.  More specifically, some of
+the goals of SIVO are to (1) provide application software development
+and maintenance, (2) provide performance tuning of large scientific
+modeling codes, (3) adopt and advocate professional software
+engineering practices to reduce complexity, cost and risk, and (4)
+provide services to migrate and convert codes between heterogeneous
+hardware platforms.
+%
+
+\noindent
+SIVO not only develops new software but is also responsible for
+maintaining and adding components to old ones. SIVO has carried out
+major developments of legacy codes such as GISS
+modelE\cite{Schmidt-eal06}, Global Modeling Initiative (GMI), etc.
+Such models are still used in their current structure and design due
+to both their large user base and their crucial, albeit poorly
+documented, design decisions.  Their aging is inevitable, but efforts
+must be taken to delay their degradation\cite{Parnas94}.  Instead of
+throwing away such software, we desire some solution which permits us
+to utilize these legacy systems within our current computational
+and software engineering environment, {\bf while gradually incorporating
+changes to meet new requirements in our environment}.
+
+Developing reliable and robust software is a difficult and time
+consuming human activity. Most legacy software evolves over a large
+period of time.  To understand legacy software, maintenance
+programmers generally review all existing documentation. However, many
+software systems will have little documentation which is current, and
+obsolete/incorrect documentation is often worse than having none. This
+general lack of accurate external documentation results in the
+situation where the best documentation for the legacy system is the
+code itself\cite{Biggerstaff90}.  Even then, were our models composed
+of small, well-written procedures, this situation might be somewhat
+reasonable.  However, given the penchant of many scientist-programmers
+for creating \emph{long}, complicated procedures, improving quality of
+legacy codes is typically exceedingly cumbersome.
+
+Many scientist and software engineers have proposed methods for modernizing
+legacy code. Decyk and Norton have presented a staged process from moving
+old Fortran to Fortran 90/95 \cite{Decyk-etal98, Decyk-etal, Norton-Decyk01}.
+Following their work, Greenough and Worth listed tools to assist programmers
+to transform legacy software \cite{Greenough-Worth06}.
+Overbey {\em et al.} introduce Photran, an automated engine, to refactor
+(by including object oriented concepts) Fortran codes \cite{Overbey-etal05}. 
+Finkbine and Mason attempt to build an expert system to analyze Fortran programs
+\cite{Finkbine-Mason97}.
+
+Recently, we started the process of reorganizing and isolating 
+the major components of the Global Modeling Initiative (GMI) code
+with the goals of making it more readable, flexible, accessible, 
+modular and easy to maintain. 
+In addition, we intend to make each component  Earth System Modeling Framework (ESMF)
+\cite{Hill-etal04} compliant.
+The challenge we have is to make sure that 
+\bi
+\item Our changes are integrated in the official version of the code 
+      (utilized daily for production experiments),
+\item We do not modify the modules provided by scientists (so that they could
+      recognize their work and still make quick contributions to the code).
+\item Resulting GMI components should be integrated in any model supporting the 
+      ESMF framework.
+\ei
+%
+%Our effort did not consist of merely building wrappers or shelves around an
+%existing code.
+
+In this paper, we describe how we achieved the above goals and
+share our experience on how a legacy code with its complexity can be
+re-engineered to take advantage of the today's software techniques
+(component-based design, object-oriented programming, etc) without
+slowing the development of the code or changing the science results.
+During the re-engineering process, we want to improve the design of the
+system in order to make it more readable, maintainable and upgradable.
+This involves the alteration of its structure, but at the same time the
+preservation of its behavior.
+
+The paper is organized as follow. We briefly describe the GMI
+code in Section \ref{sec:gmiCode}.
+Section \ref{sec:meth} details the re-engineering steps we took
+to improve the GMI code and in Section \ref{sec:apps} we list
+some areas where the newly redesigned code found applications.
+We end with concluding remarks in Section \ref{sec:conclusion}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description of the GMI Code} \label{sec:gmiCode}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The NASA Global Modeling Initiative (GMI) is a global three-dimensional
+ modeling tool focused on addressing assessments of anthropogenic impacts in an
+optimal manner, consistent with the state of the science.
+It consists of components developed by different research groups for 
+atmospheric transport, emissions, radiation, chemistry, and related 
+processes that can be evaluated and inter-compared. 
+The key strength of GMI is that it facilitates exploration of how 
+differences in the choice of model components affect the simulated 
+atmospheric chemistry system, and ultimately, the uncertainty 
+of assesssments \cite{Logan-etal03}.
+The GMI code allows users to select different chemical mechanisms,
+photolysis formulations, meteorological fields, convection schemes, 
+deposition methods, emission packages, etc.
+
+The GMI code, written mainly in Fortran 77, contains more than 500 files 
+and more than 50,000 lines of code (not including comments).
+It is maintained within a cvs repository and is employed by several research 
+institutions in the United States.
+
+The initial design of GMI offered the possibility of adding and testing
+new components without major effort.
+As the code evolved, it became less flexible and its quality and ability to
+expand degraded.
+It was almost impossible to test the behavior of individual components
+(such as Chemistry, Emission, Deposition, etc.) or share them with other software.
+They became dependent on each other in that
+variables were passed from one component to another through Fortran
+common blocks but not as arguments to routines.
+It was difficult to determine which component owns 
+(declare, allocate, initialize, update) a given variable.
+Variables were declared, allocated and initialized in groups whose
+members belonged to different components.
+Figure \ref{fig:oldComp} summarizes the inter-dependence of the components.
+
+\begin{figure}
+\centerline{\psfig{figure=GmiOldComponentsDiagram.eps,height=2.8in}}
+\caption{Symbolic representation of the GMI components and their 
+inter-dependence. The figure also shows the difficulty to have self-contained
+and re-usable components.}
+\label{fig:oldComp}
+\end{figure}
+
+The maintenance and expansion of the code became tedious, costly and 
+time-consuming.
+Because of the continuous increase of the GMI user base and a need
+to use GMI components in other atmostpheric numerical models,
+it became natural for us to move beyond the simple
+maintenance of the code and carry out a major redesign of the code.
+
+\section{Re-Engineering Methodology} \label{sec:meth}
+%
+There is an urgent need to find ways to make the GMI code more maintanable
+and expandable without disrupting its current use and to safeguard the 
+information it contains.
+One strategy to achieve our goals could be to rewrite the entire code.
+This solution would have met the needs of the programmers but not the 
+requirements of scientists who still want to make contributions to the code
+(without major effort) and not lose years of accumulated experience. 
+One risk would also be the lack of non-reproducibility of science results 
+of previous versions of the code.
+We decided to conquer our fears \cite{Feathers04} and committed to improving
+the design of the code without breaking its behavior.
+
+To alter the decay of the GMI code, we adopted a gradual refactoring approach.
+Refactoring is a disciplined technique for restructuring an existing body
+of code, altering its internal structure without changing its external behavior
+\cite{Fowler99}. 
+The heart pf refactoring is a series of small behavior preserving transformations. 
+Each transformation (called a 'refactoring') does little, but a sequence of 
+transformations can produce a significant restructuring. 
+Since each refactoring is small, it's less likely to go wrong. 
+The system is also kept fully working after each small refactoring, 
+reducing the chances that a system can get seriously broken during the
+restructuring \footnote{www.refactoring.com}.
+We indirectly followed the refactory steps laid out by Mens and Toourw\'e 
+\cite{Mens-Tourwe04}.
+
+
+\subsection{From Fixed to Free Formats and Coding Standard}
+To take advantage of the Fortran 90 features (for instance supporting 
+the use of modules, object-oriented principles) and to facilitate our code 
+transformation, we wrote an in-house
+automated tool to convert the GMI code from fixed-form Fortran 77 to 
+free-form Fortran 90/95.
+This transformation did not involve any structural change of the code.
+We carried out a series of experiments to verify that the free-form version produced
+bit-wise reproducible results with respect to the fixed-form one.
+
+We then followed a coding standard adopted in SIVO to make modifications
+in the GMI code (as in any other code). Since the GMI code is a legacy code, the
+standard applies only to new routines or modules entirely written by programmers.
+%
+% Name new directories and new files using a coding standard
+% Name routines and variables following the coding standard
+%
+%
+\subsection{Isolation of the Major Components}
+%
+The GMI code has six major components: Chemistry, Emission, Deposition,
+Convection, Diffusion, and Advection.
+All the variables manipulated by these components were passed from one component
+to another through common blocks. The declaration and initialization of the variables
+were done by include files and routines located outside the components.
+It was extremely difficult to know which variables were owned by a given component.
+
+To make the code more modular, it is important to separate components from each other
+by isolating them so that variables could be passed through standard interfaces.
+In addition, it is important to have the ability to test each component in the 
+standalone mode. 
+Otherwise, whenever we make a change in a component, we will have to test the
+entire system (costing time and resources) instead of carrying out tests on the 
+component only.
+
+We decided to get rid of the common blocks. However, not all the common blocks are
+undesirable. As long as a common block is only referenced within the component 
+which owns it, 
+we do not alter it. For instance, the photolysis package (a sub-component of Chemistry)
+contains several common blocks that are not seen outside photolysis. 
+Removing them will not only complicate our effort but also will limit the scientists' 
+ability to update and improve the package.
+
+We adopted the strategy to only remove "global" common blocks in which variables are 
+shared across components.
+In \cite{Decyk-etal98, Decyk-etal, Norton-Decyk01}, it is proposed to move variables
+contained in common blocks into Fortran 90 modules. 
+This approach, though good, is not appropriate for our objectives: 
+passing global variables to standard interfaces (argument lists of routines), 
+being able to easily integrate GMI 
+components in other software and making them ESMF compliant.
+For any routine within a GMI component,  we chose to remove {\em include} files 
+containing "global" common blocks and passed all the needed variables through 
+the argument list of the routine.
+
+We were able then to know which variables were required by each component. 
+At this stage, the major GMI components were isolated from each other and were able to 
+share variables through modified legacy interfaces.
+The isolation process did not change the internal structure of the code and
+also kept the integrity of the science results.
+As far as the programming is concerned, issues remained, such as code redundancy,
+lack of standard interfaces, several inconsistent points of entry to any component,
+lack of data ownership, inconsistent directory structure, etc.
+The next few sections will address these drawbacks.
+%
+%
+\subsection{Componentization Process}
+%
+With the isolation of GMI components completed, the next step was to start the 
+process of componentization, i.e., applying object oriented (OO) concepts to 
+access and manipulate GMI components and related variables through standard 
+interfaces.
+
+We considered the variables involved in the integration of each component
+and classified them
+in three categories according to their intent: {\em in}, {\em out} and {\em inOut}.
+With the available classification, we proceeded to identify the ownership of each 
+variable, i.e., each variable is associated with the component that updates it.
+All this was carried out with isolated components and the only noticeable change 
+in the code was the extended argument list of routines.
+
+To go beyond this point and introduce OO concepts, we designed a new directory 
+structure for the code. 
+The structure created a standard way of naming directories and allowed files and 
+sub-drirectories belonging to a given component to be grouped together by their 
+functions.
+For instance, we created a {\em Components} directory which has 
+{\em GmiChemistry} as one subdirectory. {\em GmiChemistry} itself has the 
+subdirectories {\em chemistryMethod} (containing the necessary control routines 
+for Chemistry subcomponents), {\em mechanisms}, {\em solvers},
+{\em photolysis}, etc.
+With such a structure, the user could navigate very quickly through the code 
+and be able to identify the files he wants to access.
+
+We then moved the code to the new directories and performed a series of experiments
+to verify that we did not modify the results.
+
+When all components were isolated and the ownership of each variable was
+determined, we started grouping variables belonging to a given component into a 
+derived type.
+The following derived types were created to classify and manipulate GMI variables:
+%
+\bd
+\item[Advection:] Contains transport related variables
+\item[Chemistry:] Contains chemistry related variables
+\item[Convection:] Contains convection related variables
+\item[Deposition:] Contains deposition related variables
+\item[Diffusion:] Contains diffusion related variables
+\item[Emission:] Contains emission related variables
+\ed
+%
+For each member variable (kept private and only directly accessible by the 
+component it belongs to) of the derived type, we wrote routines (whenever necessary)
+to manipulate it: 
+{\em Allocate} (to allocate the variable once), 
+{\em Set} (to set the value of the variable anywhere in the code), and 
+{\em Get} (to obtain the value of the variable anywhere in the code).
+It is important to note that these three routines are the only operations directly done
+on derived type member variables.
+
+For each component, we wrote three new interface routines to standardize the way 
+components are handled:
+%
+\bd
+\item[InitializeComponent:] called once to read resource file (only the section 
+     corresponding to the component), do initial settings
+     and perform variable allocation.
+\item[RunComponent:] used to invoke the component for model time stepping.
+\item[FinalizeComponent:] called if necessary to deallocate variables.
+\ed
+The above routines are the only ones accessible by the main program and
+they completely hide the legacy system.
+They have as arguments only derived types.
+The only way to have access to a member variable of a derived type is through the
+associated {\em Set} and {\em Get} routines.
+
+In addition to the components listed above, we created three other components
+to provide services to the six mains components.
+They are:
+\bd 
+\item[SpeciesConcentration:] Responsible for manipulating species concentration 
+     related variables.
+\item[MetFields:] Responsible for updating all the meteorological related variables
+     (by reading from files or deriving from existing variables), and passing them
+     to other components as needed.
+\item[Diagnostics:] Responsible for setting the necessary diagnostics flags and
+     passing the appropriate information to other components (that will do 
+     proper allocation of diagnostics variables they own).
+\ed
+
+\begin{example}
+We provide an example on how the componentization was used to drive
+the Chemistry component.
+We list the arguments of the three routine interfaces:
+\begin{verbatim}
+    InitializeChemistry(Chemistry, Diagnostics, gmiResourceFile, gmiGrid)
+    RunChemistry       (Chemistry, Emission, MetFields, Diagnostics, 
+                        SpeciesConcentration, gmiClock, gmiGrid)
+    FinalizeChemistry  (Chemistry)
+\end{verbatim}
+Here, {\tt gmiResourceFile} is the resource file used to set input parameters, 
+{\tt gmiClock} is a derived
+type containing the necessary clock information to move the model forward in time,
+and {\tt gmiGrid} is a derived type having the model domain decomposition variables.
+It is important to note that the legacy control routine for Chemistry has more
+than 200 variables in its argument list whereas in the componentized version,
+RunChemistry only has 7!
+\newline
+
+\end{example}
+
+\subsection{Other Improvements}
+
+\noindent
+{\bf New Domain Decomposition} \newline
+The legacy domain decomposition relied on a $n+1$-processor approach where
+the root processor was only responsible for IO and was not involved in any
+calculations. 
+During the output process, the worker processors remained idle while the root
+processor wrote out data to files.
+To facilitate the reusability of GMI components (especially in the ESMF context),
+we chose to adopt a $n$-processor decomposition where all processors participate
+in model computations.
+The decomposition was implemented in such a way that it can be seen as an
+isolated module providing services to the GMI components.
+Basically, the actual code does not know anything about the type of 
+decomposition used but only expects a set of parameters to function properly.
+
+\begin{remark}
+At this time, there is a major software engineering effort to write a package
+for asyncroneous IO. 
+A small set of processors are reserved for IO and worker ones continually do
+calculations without waiting for IO to be performed.
+Could the componentized version of the GMI code takes advantage of such method?
+Yes! The fact that the domain decomposition module in GMI only provides services,
+GMI components will remain the same.
+The only change will be in the output procedures where we need to take into consideration
+the reserved processors and write appropriate communication routines.
+\end{remark}
+
+\vskip 0.60cm
+
+\noindent
+{\bf New Input/Output Procedures} \newline
+With the componentization work, the reading of input data is handled by each
+processor.
+Each component (having no knowledge of the global domain) is in charge of 
+manipulating the initial data and files associated with it.
+A processor only reads the portion of the data associated with its subdomain.
+The root processor no longer performs the initialization process alone or sends
+the data to other processors.
+
+Along the same line, we completely rewrote the way outputs are done.
+New self-contained modules were written to manipulate (create, write data
+into, and close) output files.
+The root processor is still responsible for writing the data out but there
+is no global data permanently used throughout the run.
+Global arrays are only created when the root process expects data from other
+processors and are destroyed as soon as it finishes writing out data in files.
+
+\vskip 0.60cm
+
+
+\noindent
+{\bf Reduction of Memory Requirement} \newline
+Componentizing the GMI code removed the need to have a global view of the domain.
+Each component (even sections of the code dealing with outputs) only acts on
+its local subdomain.
+This lead to significant reduction in the number of the permanent global variables.
+In fact the current version of the code only has 13 three-dimensional 
+global variables  (regardless of the type of experiment) that
+are needed to read in meteological variables. 
+The only reason that they are global is because they require "halo" grid data.
+All the other variables are purely local. 
+During the output process, the root processor will allocate (as needed)
+global variables before it receives data from the other processors.
+It will deallocate them as soon as the data are written out in files.
+The memory use is kept to the minimum.
+
+If we consider a typical combined stratospheric/trospospheric experiment
+(the one used for most GMI production runs), the componentized version
+of the code shows at least a $50\%$ reduction of memory requirement.
+%
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|l|c|c|c|} \hline\hline
+         & 3D    &   4D   &  5D   \\ \hline\hline
+old code & 50    &   18   &  4    \\
+new code & 13    &  none  & none  \\ \hline\hline  
+\end{tabular}
+\caption{\em Number of global variables in the old and new versions of the code for a
+typical combined stratospheric/tropospheric experiment.}
+\label{tab:memory}
+\end{center}
+\end{table}
+%
+Table \ref{tab:memory} presents the number of global variables needed by both versions
+of the code.
+We observe that the componentized code does not utilize any global four/five
+dimensional variable.
+
+\vskip 0.60cm
+
+\noindent
+{\bf Resource File Setting} \newline
+The code depended on namelist input settings to carry out experiments.
+As we were progressing in our effort, we noticed that many of the namelist
+variables were not properly initialized, leading to unexpected results.
+Because namelist variables are read in in blocks, we did not have the flexibility
+to access individual namelist variables to facilitate the initialization process.
+Additional obstacles were encountered when we started adding the ESMF infrastructure
+in the GMI code.
+A resource file (a text file consisting of variable length lines, 
+each possibly starting with label, followed by some data) setting became 
+more appropriate to read in input parameters.
+Variables are read in one at the time and default values are included in the
+the reading calls.
+It is important to note that namelist variables were transfered to the resource
+file and we did not add any complexity to the code.
+To the contrary, we simplified the initialization procedures and solved 
+some component dependency issues.
+
+\vskip 0.60cm
+
+\noindent
+{\bf Removal of Redundancy} \newline
+One of the major problems encountered in legacy systems is code duplication.
+The GMI code suffered from it.
+The issue was not only limited to the redundancy of certain calculations but
+also the absence of a central location where routines used across components
+could be found.
+
+We identified variables unnecesarily recomputed in several parts of the code,
+wrote Fortran modules to compute them,
+made changes to calculate them once and pass them wherever they are needed.
+We created an organized central location to store shared routines.
+
+\vskip 0.60cm
+
+\noindent
+{\bf Code Readibility} \newline
+To make the code more readable, we carried the following steps:
+\bi
+\item To the extent possible, we replaced "magic" numbers (for instance directly
+      using the number $9.81$ for the gravity constant) with name constants that
+      clearly define the physical meaning of the numbers used.
+\item In the input parameter settings, we replaced the use of indices (refering to
+      chemical species indices) with actual species names.
+\item We standardized the way that comments are written in the source code
+      and adopted the use of ProTex prologue.
+      This has significantly improved the code readability and has allowed
+      programmers and users to automatically generate documents describing the code.
+\ei
+
+In summary, the current version of the code is more readable and has reduced the
+computational complexity in its design and implementation.
+In fact, the new componentized code (see Figure \ref{fig:newComp}) 
+uses less computing resources 
+(memory for instance) and maintains at least the same parallel performance 
+with respect to the legacy system.
+
+\begin{figure}
+\centerline{\psfig{figure=GmiNewComponentsDiagram.eps,height=2.8in}}
+\caption{New representation of the GMI code where the components are isolated
+and self-contained. The GMI Driver contains three routines (Initialize, Run,
+and Finalize) which arguments are the components derived types. Note also
+that the supporting modules are also isolated and provide services to the
+components through standard interfaces.}
+\label{fig:newComp}
+\end{figure}
+
+\section{Applications} \label{sec:apps}
+%There are at least three practical applications of the componentization work:
+%
+
+\noindent
+{\bf Testing Individual Components} \newline
+To verify that GMI components were completely isolated from each other,
+the Emission and Diffusion components were independently tested
+for a couple of time steps.
+We ran the entire model and saved out into files all the data
+needed to drive the Emission and Diffusion components.
+We then wrote simple programs exercising the routine interface to the 
+components: {\tt Initialize}, {\tt Run} (for the desired number of time steps) 
+and {\tt Finalize}.
+We were able to reproduce (bitwise identical) the results obtained by running 
+the entire model.
+
+\vskip 0.60cm
+
+\noindent
+{\bf Addition of New Sub-Components} \newline
+How easy is it for programmers and scientists to add new modules 
+(using legacy code concepts) to the new code structure?
+Throughout our work, we were asked to integrate several modules into the code.
+Our main task was first to identify which component a new module should be part of.
+Then we assessed the interaction (if any) of the module with other components.
+From there we wrote appropriate wrapper interfaces by leaving the original code
+unchanged.
+Following these steps, we integrated several sub-components in Emission, Chemistry,
+etc.
+
+\vskip 0.60cm
+
+\noindent 
+{\bf Components can be used in other Atmospheric Models} \newline
+The Chemical Transport Modeling Framework (CTMF) is a flexible ESMF framework
+designed for conducting CTM experiments using components from various models.
+CTMF accepts ESMF compliant components and handles dynamic time stepping 
+configurations specified by the user.
+The GMI Emission and Diffusion components were fully integrated within 
+CTMF and were shown to work with components from other models.
+
+In addition, GMI components (namely Chemistry, Emission and Deposition) 
+were successfuly implemented into the Goddard Earth Observing System 
+(GEOS5, a numerical atmospheric model) which runs in an operational mode \cite{Rienecker-etal08}.
+This application is particularly of interest because GMI untill now
+was driven by meteorological data coming from files. 
+Within GEOS5, the GMI components interact in real time with other modules
+of GEOS5 and allow to have a better understanding on how chemical species
+affect the climate.
+
+\vskip 0.60cm
+
+\noindent 
+{\bf Components can be integrated together using ESMF} \newline 
+The design and implementation of GMI components make them ESMF ready.
+In the current version of the code, the message passing is initialized through
+ESMF and the entire code is driven by an ESMF clock.
+Moreover, ESMF routines are used to read the resource file (described above).
+These are just the initial steps of a more comprehensive approach to make
+GMI components work together within the ESMF infrastructure.
+Along that line, we took an ESMF transport component \cite{Lin04} and integrated it in
+the GMI code.
+It involved writing wrapper routines and supporting modules to allow
+GMI to interact with the transport code (that was not at all modified to 
+accomodate GMI). 
+The only obstacle we encountered was to properly derived the units of the quantities
+passed (through wrapper routines) from GMI to the transport component.
+This exercise proved that with the current design of GMI code, it is possible without
+major effort to incorporate ESMF components.
+
+%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions and Lessons Learned} \label{sec:conclusion}
+We carried out the modernization of the Global Modeling Initiative (GMI) code.
+We used current software engineering best practices to componentize the
+code by making it more readable, flexible and maintainable.
+As a result of this effort, we were able (1) to isolate individual components,
+(2) to introduce object-oriented concepts to make components more modular, 
+(3) to test individual components in standalone mode, and (4) to use the
+components in other codes.
+
+Our work did not consist of writing shelves around an existing legacy code
+but instead completely redesign and restructure it by maintaining its 
+scientific integrity and by expanding its use.
+
+While we were able to succeed in this work, we encountered
+some difficulties due to the fact we initially focused on the most challenging parts
+(Chemistry component for instance) of the code and failed to take into account 
+"trivial" components (Diffuion) that 
+turned out to be critical in the design.
+In spite of that, we were able to quickly recover and made necessary adjustments
+to achieve our objectives.
+
+We followed these steps to ensure that the new code reproduces results of previous
+versions and to allow users to carry out production runs at the same time changes were
+introduced.
+%
+\bn
+\item Before any attempt to modify the code, we carried out a suite of tests
+      that served as references against any future change.
+\item We used a version control system (CVS) to have backup copies of the code and
+      to keep track of all our changes. As soon a change was validated, 
+      it was committed to the repository.
+\item We made incremental modifications by making small steps.
+\item We used system tests as well as unit tests to validate any change.
+\item In critical sections of the code, we used pair-programming to make sure
+      that the changes did not brake the system behavior.
+\en
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%
+
+\begin{thebibliography}{99}
+\bibitem{Biggerstaff90} Biggerstaff T.
+    Design recovery for maintenance and reuse. 
+    {\em IEEE Computer} 1989; {\bf 22}(7): 36-49.
+%
+\bibitem{Decyk-etal98} Decyk VK, Norton CD, Szymanski BK.
+    How to support inheritance and run-time polymorphism in Fortran 90. 
+    {\em Computer Physics Communications} 1998; {\bf 115}: 9-17.
+%
+\bibitem{Decyk-etal} Decyk VK, Norton CD, Szymanski BK.
+    How to express C++ concepts in Fortran 90. Technical Report.
+%
+\bibitem{Feathers04} Feathers M.
+    {\em Working Effectively with Legacy Code}.
+    Prentice Hall, 2004.
+%
+\bibitem{Finkbine-Mason97} Finkbine R, Mason WO.
+    Analyzing FORTRAN codes for program understanding and reengineering.
+    Proceedings of the 10th international conference on Industrial and 
+    Engineering Applications of Artificial Intelligence and Expert Systems.
+    Atlanta, Georgia, 1997; 69-72.
+%
+\bibitem{Fowler99} Fowler M.
+    {\em Refactoring: Improving the Design of Existing Code}.
+    Addison-Wesley, 1999.
+%
+\bibitem{Greenough-Worth06} Greenough C, Worth DJ.
+    The transformation of legacy software: some tools and a process.
+    {\tt http://www.sesp.cse.clrc.ac.uk/Publications/Legacy-Software/\\Legacy-Software/legacy.html}.
+%
+\bibitem{Hill-etal04} Hill C, DeLuca C, Balaji V, Suarez M, da Silva A. 
+    Architecture of the Earth System Modeling Framework.
+    {\em Computing in Science and Engineering} 2004; {\bf 6}(1). 
+%
+\bibitem{Lin04} Lin S-J.
+    A vertically Lagrangian Finite-Volume Dynamical Core for Global Models.
+    {\em Mon. Wea. Rev.} 2004; {\bf 132}: 2293-2307.
+%
+\bibitem{Logan-etal03} Logan JA, Bergmann D, Rodriguez J, Chatfiled R, 
+   Considine D, Wang YH, Jacob DJ, Prather MJ, Rotman D, Cameron-Smith P.
+   Evaluation of tropospheric chemistry simulations for the Global 
+   Modeling Initiative (GMI).
+   {\em Geophysical Research Abstracts} 2003; {\bf 5}, 07579.
+%
+\bibitem{Kouatchou-etal04} Kouatchou J, Das B, H. Oloso H.
+    {G}lobal {M}odeling {I}nitiative: Tutorial and User's Guide.
+    {\tt http://gmi.gsfc.nasa.gov/tutorial/index.html} [October 2004].
+%
+\bibitem{Mens-Tourwe04} Mens T,  Tourw\'e T.
+    A survey of software refactoring.
+    {\em IEEE Transactions of Software Engineering} 2004; {\bf 30}(2): 126-139.
+%
+\bibitem{Norton-Decyk01} Norton CD, Decyk VK.
+    Re-engineering legacy mission scientific software.
+    AIAA Space 2001 Conference and Exposition.
+    Albuquerque, NM, August 28-30, 2001.
+%
+\bibitem{Rienecker-etal08} Rienecker MM, Suarez MJ, Todling R, Bacmeister J, 
+    Takacs L, Liu H-C, Gu W, Sienkiewicz M, Koster RD, Gelaro R, Stajner I, Nielsen JE.
+    The GEOS-5 Data Assimilation System - Documentation of Versions 5.0.1, 5.1.0, and 5.2.0.
+    Technical Report Series on Global Modeling and Data Assimilation 2008; {\bf 27}.
+%
+\bibitem{Rotman-etal01} Rotman DA, Tannahill JR, Kinnison DE,
+    Connell PS, Bergmann D, Proctor D, Rodriguez JM, Lin S-J,
+    Rood RB, Prather MJ, Rasch PJ, Considine DB, Ramaroson R, Kawa SR.
+    The {G}lobal {M}odeling {I}nitiative assessment model:
+    model description, integration, and testing of the transport.
+    {\em J. Geo. Res.} 2001; {\bf 106}(D2):1669-1691.
+%
+\bibitem{Schmidt-eal06} Schmidt GA et al,
+   Present day atmospheric simulations using GISS ModelE: Comparison to in-situ, 
+   satellite and reanalysis data.
+   {\em J. Climate} 2006; {\bf 19}: 153-192. DOI:10.1175/JCLI3612.1.
+%
+\bibitem{Overbey-etal05} Overbey J, Xanthos S, Johnson R, Foote B.
+    Refactoring for Fortran and high-performance computing.
+    ICSE'05, St. Louis, Missouri, May 15-21, 2005.
+%
+\bibitem{Parnas94} Parnas DL.
+    Software aging.
+    {\em Proceedings of 16th IEEE International Conference of Software Engineering},
+    Sorrento, Italy, May 16-21, 1994; 279-287.
+\end{thebibliography}
+%...............................................................
+\end{document}
+

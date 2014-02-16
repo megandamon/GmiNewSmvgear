@@ -1,0 +1,43 @@
+#_______________________________________________________________________________
+#
+#  chemtypes :  Input data defining types of GMI test programs to be built/run.
+#_______________________________________________________________________________
+#
+#  This input file defines the chemical mechanisms that will be used when the
+#  suite of "gmi-exam" test programs build a set of unique "gem executables".
+#
+#  It is also used later to define which types of tests will be executed.
+#
+#  Specify one or more chemistry types, one per line, in this file
+#  with no leading or trailing whitespace characters on the input lines.
+#
+#  This simple design was used to quickly develop a set of programs that 
+#  will automatically build GMI code and verifying its validity by running a
+#  series of standard tests and comparing their output to the expected results.
+#
+#  The programs that read "input options and definitions" such as those
+#  seen below are designed to ignore any line that begins (IN COLUMN 1) with the
+#  symbol commonly referred to as a pound sign, number sign, or crosshatch (#).
+#
+#  All other lines that do not begin with the # character are considered
+#  to be input definitions that will control the test runs, and in this case,
+#  are simply the names that will be passed to the code as $CHEMTYPE during
+#  each test run of the "gem" executables.
+#_______________________________________________________________________________
+#
+#  This was designed by Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#_______________________________________________________________________________
+#
+#  Modification History:
+#
+#  11/27/2005  W. Hoff            Original
+#_______________________________________________________________________________
+#
+#  Specify the chemical mechanisms to be used in your upcoming make builds:
+#
+aerosol
+strat_trop
+strat_trop_aerosol
+troposphere
+#
+#_______________________________________________________________________________

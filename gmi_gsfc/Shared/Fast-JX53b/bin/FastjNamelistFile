@@ -1,0 +1,13 @@
+&NL_InFile 
+   CrossSection_InfileName     = '/u1/kouatch/Fast-JX53b/input_data/FJX_spec.dat'  ,
+   ScatteringData_InfileName   = '/u1/kouatch/Fast-JX53b/input_data/FJX_scat.dat'  ,
+   PhotRateLabels_InfileName   = '/u1/kouatch/Fast-JX53b/input_data/ratj.dat'      ,
+   T_O3_Climatology_InfileName = '/u1/kouatch/Fast-JX53b/input_data/atmos_std.dat' ,
+   CTMdata_InfileName          = '/u1/kouatch/Fast-JX53b/input_data/FJX_test.dat'  ,
+   SampleRun_InfileName        = '/u1/kouatch/Fast-JX53b/input_data/ECT42_grid.dat' /
+&NL_Dims
+   LongDim     = 128,
+   LatDim      =  64,
+   VertDim     =  37,
+   VertDimJval =  37,
+   NumJval     =  62 /

@@ -1,0 +1,4 @@
+iord: 3
+jord: 3
+kord: 4
+fill: 0         #  1 if TRUE, 0 = FALSE

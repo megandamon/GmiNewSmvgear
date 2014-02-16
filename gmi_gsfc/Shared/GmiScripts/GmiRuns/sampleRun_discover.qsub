@@ -1,0 +1,1250 @@
+#PBS -S /bin/csh
+#PBS -N GmiScript
+#PBS -l select=16:ncpus=4:proc=wood
+#PBS -l walltime=00:25:00
+#PBS -W group_list=a930b
+#PBS -j eo
+##PBS -V
+
+#######################################################################
+#                  System Environment Variables
+#######################################################################
+
+umask 022
+
+setenv MPI_USE_XPMEM
+setenv MPI_BUFFER_MAX 2000
+setenv MPI_TYPE_MAX   655360
+setenv MPI_MSGS_MAX   10485760
+
+setenv MPI_GROUP_MAX 128
+setenv RUN_CMD "time mpirun -inherit_limits -np"
+
+module purge
+module load comp/intel-9.1.042
+module load mpi/scali-5
+
+#######################################################################
+#                        Set Experiment Directories
+#######################################################################
+#
+# Modify the following directories to specify source and run locations
+
+setenv gmiBIN /home/kouatch/GmiCodes/ESMFcode/gmi_gsfc/Applications/GmiBin
+setenv runDIR /discover/nobackup/kouatch/GMI/combo/DomainDecomp
+
+mkdir -p $runDIR
+cd $runDIR
+
+# The application executable
+
+setenv APP_EXE gmi.x
+
+# Chemical mechanism
+
+setenv CHEMCASE strat_trop
+
+#######################################################################
+#                       Set Model Run Parameters
+#######################################################################
+
+# Problem name
+
+set gmiProblemName = GmiScript
+
+# Processor decomposition along longitude and latitude
+
+set numLonProcs  = 9
+set numLatProcs  = 7
+
+# Global domain grid
+
+set firstGlobLon  = 1
+set lastGlobLon   = 144
+set firstGlobLatU = 1
+set firstGlobLatV = 1
+set lastGlobLat   = 91
+set firstGlobAlt  = 1
+set lastGlobAlt   = 42
+set numSpecies    = 124
+set gmi_nborder   = 4
+
+# Begin and end time
+
+set BEG_YY = 2004
+set BEG_MM = 1
+set BEG_DD = 1
+set BEG_H  = 0
+set BEG_M  = 0
+set BEG_S  = 0
+
+set END_YY = 2004
+set END_MM = 1
+set END_DD = 2
+set END_H  = 0
+set END_M  = 0
+set END_S  = 0
+
+# Model time step
+
+set DT = 1800.0
+set tdt = 1800.0d0
+
+# Leap year calender flag
+
+set leapYearFlag = 0
+
+set do_ftiming = T
+
+set splitPEs = 2
+
+set TEST = 1
+
+@ IM = 1 + $lastGlobLon - $firstGlobLon
+@ JM = 1 + $lastGlobLat - $firstGlobLatU
+@ LM = 1 + $lastGlobAlt - $firstGlobAlt
+
+@ begGmiTime = $BEG_H  * 10000 + $BEG_M  * 100 + $BEG_S
+@ begGmiDate = $BEG_YY * 10000 + $BEG_MM * 100 + $BEG_DD
+
+@ endGmiTime = $END_H  * 10000 + $END_M  * 100 + $END_S
+@ endGmiDate = $END_YY * 10000 + $END_MM * 100 + $END_DD
+
+@ numWorkerProcs  = $numLonProcs * $numLatProcs
+
+/bin/rm -f $gmiProblemName*
+
+
+#######################################################################
+#                     Create GMI Resource File
+#######################################################################
+
+set      FILE = gmiResourceFile.rc
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+
+ROOT_RC_FILE: FVadvcore_GridComp.rc
+splitPEs: $splitPEs
+
+        #########################
+        # Global Domain variables
+        #########################
+
+NX: $numLonProcs
+NY: $numLatProcs
+IM: $IM
+JM: $JM
+LM: $LM
+
+gmi_nborder: $gmi_nborder
+numSpecies: $numSpecies
+
+        ##################
+        # Timing variables
+        ##################
+
+BEG_YY: $BEG_YY
+BEG_MM: $BEG_MM
+BEG_DD: $BEG_DD
+BEG_H:  $BEG_H
+BEG_M:  $BEG_M
+BEG_S:  $BEG_S
+
+END_YY: $END_YY
+END_MM: $END_MM
+END_DD: $END_DD
+END_H:  $END_H
+END_M:  $END_M
+END_S:  $END_S
+
+RUN_DT: $DT
+
+leapYearFlag: $leapYearFlag
+
+do_ftiming: $do_ftiming
+
+        #############################
+        # metFields related variables
+        #############################
+
+met_opt: 3
+met_grid_type: A
+do_timinterp_met: F
+met_infile_num: 16
+mrnum_in: 1
+met_filnam_list: jan2004.list
+do_read_met_list: T
+do_cycle_met: F 
+gwet_opt: 1
+mdt: 10800.0d0
+
+        #########################################
+        # Species Concentration related variables
+        #########################################
+
+const_opt: 2
+fixed_const_timpyr: 12
+fixed_const_infile_name: /discover/nobackup/kouatch/GMI/inputData/fixed_ACET_CH4_gmi_G4agcm_2%5x2x42.nc
+fixedConcentrationSpeciesNames::
+ACET
+::
+
+        #############################
+        # Tracer related variables
+        #############################
+
+tracer_opt: 0 
+
+        ###############################
+        # Diagnostics related variables
+        ###############################
+
+problem_name: $gmiProblemName
+do_ftiming: $do_ftiming
+pr_diag: F
+
+pr_ascii: T
+pr_ascii1: T
+pr_ascii2: T
+pr_ascii2: F
+pr_ascii3: T
+pr_ascii4: T
+pr_ascii5: T
+ascii_out_n: 24
+pr_ascii_step_interval: 24
+
+pr_netcdf: T
+outmain_name: adaily_main
+outaerdust_name: aerdust
+prs_dim_name: eta_dim
+pr_level_all: T
+k1r_gl: 1
+k2r_gl: 42
+pr_const: T
+pr_psf: T
+pr_kel: T
+pr_mass: T
+pr_overheadO3col: F
+pr_dry_depos: T
+pr_wet_depos: T
+pr_surf_emiss: T
+
+pr_drydep_all: F
+dryDepSpeciesNames::
+CH2O
+HNO3
+H2O2
+MP
+NO2
+N2O5
+O3
+PAN
+PMN
+PPN
+R4N2
+::
+
+pr_wetdep_all: F
+wetDepSpeciesNames::
+CH2O
+HNO3
+H2O2
+MP
+N2O5
+::
+
+pr_emiss_all: F
+surfEmissSpeciesNames::
+CH2O
+CO
+NO
+ALK4
+C2H6
+C3H8
+ISOP
+MEK
+PRPE
+::
+
+pr_metwater: T
+do_mean: T
+pr_grid_height: T
+
+pr_flux: T
+pr_const_flux: T
+pr_psf_flux: T
+pr_flux_period_days: 1.0d0
+fluxSpeciesNames::
+CH2O
+CH4
+CO
+HNO3
+H2O2
+MP
+NO
+NO2
+N2O5
+O3
+PAN
+SYNOZ
+::
+
+pr_sad: T
+pr_tend: T
+pr_qj: T
+pr_qj_o3_o1d: T
+pr_qj_opt_depth: T
+pr_qk: T
+pr_qqjk: T
+pr_nc_period_days: -1.0d0
+pr_AerDust: T
+
+pr_tend_all: F
+tendSpeciesNames::
+CH2O
+CH4
+CO
+HNO3
+H2O2
+MP
+NO
+NO2
+N2O5
+O3
+PAN
+SYNOZ
+::
+
+freq1SpeciesNames::
+CH4
+CO
+HNO3
+N2O
+O3
+OH
+ClO
+Cl2O2
+ClONO2
+HCl
+CFCl3
+CF2Cl2
+::
+  
+k1_freq1: 5
+k2_freq1: 35
+pr_const_freq1: T
+pr_metwater_freq1: T
+pr_psf_freq1: T
+pr_kel_freq1: T
+pr_mass_freq1: T
+pr_grid_height_freq1: T
+pr_rel_hum_freq1: T
+do_mean_freq1: F
+do_day1_freq1: F
+do_last_tstep_freq1: F
+freq1_name: idaily
+freq1_description: Daily**Instantaneous**Output**at**12Z
+pr_nc_freq1:  1.d0
+at_time_freq1: 0.5d0
+pr_tropopausePress_freq1: T
+pr_potentialVorticity_freq1: T
+
+freq2SpeciesNames::
+O3
+::
+
+pr_const_surface_freq2: T
+pr_psf_freq2: T
+do_mean_freq2: F
+do_day1_freq2: F
+freq2_name: hourlyoz
+freq2_description: Hourly**Surface**Ozone
+pr_nc_freq2: 0.04167d0
+
+freq3SpeciesNames::
+O3
+::
+
+pr_const_column_freq3: T
+pr_metwater_freq3: T
+pr_psf_freq3: T
+pr_kel_freq3: T
+pr_mass_freq3: T
+pr_grid_height_freq3: T
+pr_rel_hum_freq3: T
+do_mean_freq3: F
+do_day1_freq3: F
+freq3_name: columnoz
+freq3_description: Daily**Instantaneous**Column**Ozone**at**12Z
+pr_nc_freq3:  1.0d0
+at_time_freq3: 0.5d0
+do_last_tstep_freq3: F
+pr_tropopausePress_freq3: T
+pr_potentialVorticity_freq3: T
+
+pr_overpass1: T
+pr_kel_overpass1: T
+pr_psf_overpass1: T
+pr_const_overpass1: T
+pr_totalMass_overpass1: T
+pr_relHumidity_overpass1: T
+pr_gridBoxHeight_overpass1: T
+pr_cloudOptDepth_overpass1: T
+pr_overheadO3col_overpass1: T
+begTime_overpass1: 9.0d0
+endTime_overpass1: 12.0d0
+pr_overpass1_period_days: 1.0d0
+overpass1SpeciesNames::
+CH2O
+CO
+NO
+NO2
+O3
+OH
+::
+
+pr_overpass2: T
+pr_kel_overpass2: T
+pr_psf_overpass2: T
+pr_const_overpass2: T
+pr_totalMass_overpass2: T
+pr_relHumidity_overpass2: T
+pr_gridBoxHeight_overpass2: T
+pr_cloudOptDepth_overpass2: T
+pr_overheadO3col_overpass2: T
+begTime_overpass2: 12.0d0
+endTime_overpass2: 15.0d0
+pr_overpass2_period_days: 1.0d0
+overpass2SpeciesNames::
+CH2O
+CO
+NO
+NO2
+O3
+OH
+::
+
+pr_const_column: T
+col_diag_period: 3600.d0
+stationsInputFileName: /discover/nobackup/kouatch/GMI/inputData/colDiagStationList.asc
+colDiagStationsNames::
+SPO
+MCM
+HBA
+FOR
+NEU
+SYO
+PSA
+MAR
+MAQ
+TDF
+CRZ
+LAU
+CGO
+ASP
+CPT
+EIC
+JOH
+REU
+NAM
+FIJ
+TAH
+CUI
+SMO
+PNA
+WAT
+ASC
+NAT
+SEY
+BRA
+MAL
+NAI
+SNC
+CHR
+KCO
+PAR
+TVD
+PAN
+VEN
+RPB
+GMI
+POO
+KUM
+MLO
+GTK
+HON
+TAI
+ASK
+JPI
+KEY
+NAH
+OGA
+MID
+IZO
+KEN
+NDI
+LZC
+WIS
+KAG
+KLA
+KPA
+PAT
+BME
+CHJ
+AAZ
+CNC
+GCT
+TAT
+GOZ
+WLG
+OIJ
+HAP
+TAP
+MMO
+LWV
+RPI
+WLI
+AZR
+PTA
+CAG
+IRD
+RYO
+UTA
+DFO
+NWR
+TRH
+FWI
+HAR
+MON
+SAP
+SOF
+KZM
+RIK
+BIS
+GMV
+OOR
+BSC
+MOS
+KZD
+UUM
+CMT
+CWI
+CMO
+LEF
+JUN
+HUN
+PAY
+HOH
+PRA
+UCC
+MND
+LIN
+SHM
+EDM
+GBO
+LGN
+MHD
+ARK
+CBA
+BAL
+ZVE
+BIT
+STR
+CHU
+REY
+STM
+SOD
+BRW
+RES
+MBC
+ZEP
+ALT
+TA1
+TA2
+TA3
+TA4
+TA5
+TA6
+CLA
+PW1
+PW2
+PW3
+PW4
+PW5
+PW6
+PT1
+PT2
+PT3
+PT4
+PT5
+PT6
+IN1
+IN2
+SX1
+SX2
+SX3
+SX4
+SX5
+CG2
+CMW
+PEK
+SHA
+MAD
+BAN
+DEL
+TEH
+TEL
+DUB
+FRA
+NEW
+ATL
+DAL
+CAR
+ABI
+SAO
+JOH
+VIE
+OSA
+TRI
+ISF
+BOB
+CAI
+LAG
+HUNT
+SANT
+KUAL
+SUVA
+MALINDI
+PARAMARI
+LAREUNI
+PAGO
+SANCRIS
+PAPEE
+IRENE
+CHI
+HOU
+SBA
+::
+
+colDiagSpeciesNames::
+CH2O
+CO
+HNO2
+HNO3
+HNO4
+H2O
+HO2
+H2O2
+NO
+NO2
+NO3
+N2O5
+O3
+OH
+ALD2
+ALK4
+C2H6
+C3H8
+ISOP
+PAN
+PRPE
+ACET
+Total**density
+H2OAIR
+SYNOZ
+::
+
+col_diag_pres:: 
+1000.0d0
+900.0d0
+800.0d0
+700.0d0
+600.0d0
+500.0d0
+400.0d0
+350.0d0
+300.0d0
+250.0d0
+200.0d0
+175.0d0
+150.0d0
+125.0d0
+100.0d0
+90.0d0
+80.0d0
+70.0d0
+60.0d0
+50.0d0
+40.0d0
+30.0d0
+20.0d0
+15.0d0
+10.0d0
+::
+
+        #############################
+        # Restart related variables
+        #############################
+
+pr_restart: T
+do_overwrt_rst: F
+pr_rst_period_days: 1.0d0
+rd_restart: T
+restart_infile_name: /discover/nobackup/kouatch/GMI/inputData/gmic_fvgcm98_2x2.5_rerun_yr6_dec.rst.nc
+
+        #############################
+        # Advection related variables
+        #############################
+
+advec_opt: 1
+press_fix_opt: 1
+do_var_adv_tstp: T
+advectedSpeciesNames::
+CH2O
+CH4
+CO
+H2
+HCOOH
+HNO2
+HNO3
+HNO4
+H2O2
+MOH
+MP
+N2O
+NO
+NO2
+NO3
+N2O5
+O3
+Br
+BrCl
+BrO
+BrONO2
+HBr
+HOBr
+Cl
+Cl2
+ClO
+Cl2O2
+ClONO2
+HCl
+HOCl
+OClO
+CH3Br
+CH3Cl
+CH3CCl3
+CCl4
+CFCl3
+CF2Cl2
+CFC113
+CFC114
+CFC115
+HCFC22
+HCFC141b
+HCFC142b
+CF2Br2
+CF2ClBr
+CF3Br
+H2402
+ACTA
+ALD2
+ALK4
+C2H6
+C3H8
+ETP
+HAC
+IALD
+IAP
+ISOP
+MACR
+MEK
+MVK
+PAN
+PMN
+PRPE
+R4N2
+RCHO
+RCOOH
+DEHYD
+SYNOZ
+::
+
+        #############################
+        # Diffusion related variables
+        #############################
+
+diffu_opt: 1
+vert_diffu_coef: 1.0d0
+
+        ##############################
+        # Convection related variables
+        ##############################
+
+convec_opt: 3
+
+        ##############################
+        # Deposition related variables
+        ##############################
+
+do_drydep: T
+do_wetdep: T 
+
+        ##############################
+        # Emission related variables
+        ##############################
+
+emiss_opt: 2
+emiss_in_opt: 2
+emiss_conv_flag: 0
+semiss_inchem_flag: -1
+emiss_timpyr: 12
+emiss_var_name: emiss
+emiss_infile_name: /discover/nobackup/kouatch/GMI/inputData/Aura_Harvard_2004_Emissions_ship.nc
+do_ShipEmission: T
+
+emissionSpeciesNames::
+xxx
+xxx
+NO
+NO
+NO
+NO
+NO
+CO
+CO
+CO
+MEK
+MEK
+MEK
+PRPE
+PRPE
+PRPE
+C2H6
+C2H6
+C2H6
+C3H8
+C3H8
+C3H8
+ALK4
+ALK4
+ALK4
+ALD2
+ALD2
+CH2O
+CH2O
+xxx
+xxx
+xxx
+xxx
+HNO3
+O3
+::
+
+isop_scale::
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+1.0d0
+::
+
+fertscal_infile_name: /discover/nobackup/kouatch/GMI/inputData/GMIfertscale_2x25_dao.asc
+light_infile_name: /discover/nobackup/kouatch/GMI/inputData/lighttable.asc
+precip_infile_name: /discover/nobackup/kouatch/GMI/inputData/GMIprecip_2x25_dao.asc
+soil_infile_name: /discover/nobackup/kouatch/GMI/inputData/soiltype.asc
+veg_infile_name: /discover/nobackup/kouatch/GMI/inputData/GMIvegtype_2x25_dao.asc
+lai_infile_name: /discover/nobackup/kouatch/GMI/inputData/GMIlai_2x25_dao.asc
+doMEGANemission: T
+aefMboMEGAN_InfileName: /discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_MBO.geos.2x2.5.nc
+aefIsopMEGAN_InfileName: /discover/nobackup/kouatch/GMI/inputData/MEGAN/NEW_MEGAN_AEF_ISOP.geos.2x2.5.nc
+aefMonotMEGAN_InfileName: /discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_MTP.geos.2x2.5.nc
+aefOvocMEGAN_InfileName: /discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_OVC.geos.2x2.5.nc
+laiMEGAN_InfileName: /discover/nobackup/kouatch/GMI/inputData/MEGAN/avhrrlai.global.geos.2x2.5.2000.nc
+gcr_infile_name: /discover/nobackup/kouatch/GMI/inputData/GCR_1970-2025_33.nc
+do_gcr: F
+
+        ##############################
+        # Lightning related variables
+        ##############################
+
+lightning_opt: 1
+i_no_lgt: 5
+
+        ##############################
+        # Chemistry related variables
+        ##############################
+
+chem_opt: 2
+do_chem_grp: T
+synoz_threshold: 150.0d-9
+chem_cycle: 1.0d0
+do_smv_reord: T
+do_wetchem: F
+loss_opt: 0
+do_AerDust_Calc: T
+AerDust_Effect_opt: 0
+AerDust_infile_name: /discover/nobackup/kouatch/GMI/inputData/aerosols_2004_agcm_kg_per_m3_2%5x2x42.nc
+forc_bc_opt: 2
+forc_bc_years: 100
+forc_bc_start_num: 34
+forc_bc_kmin: 1
+forc_bc_kmax: 2
+
+forcedBcSpeciesNames::
+CFCl3
+CF2Cl2
+CFC113
+CFC114
+CFC115
+CCl4
+CH3CCl3
+HCFC22
+HCFC141b
+HCFC142b
+CF2ClBr
+CF2Br2
+CF3Br
+H2402
+CH3Br
+CH3Cl
+CH4
+N2O
+::
+
+forc_bc_infile_name: /discover/nobackup/kouatch/GMI/inputData/wmo2002_ch4latvar_1970_2069.asc
+h2oclim_opt: 2
+h2oclim_infile_name: /discover/nobackup/kouatch/GMI/inputData/h2o_ch4_clim_2%5x2x42_fvccm.nc
+sad_opt: 2
+lbssad_opt: 3
+lbssad_infile_name: /discover/nobackup/kouatch/GMI/inputData/sad_dbc_2%5x2x42_2000.nc
+
+        ##############################
+        # Photolysis related variables
+        ##############################
+
+phot_opt: 3
+fastj_opt: 1
+do_clear_sky: F
+uvalbedo_opt: 2
+uvalbedo_infile_name: /discover/nobackup/kouatch/GMI/inputData/uvalbedo.geos.2x2%5.ascii
+sfalbedo_opt: 3
+cross_section_file: /discover/nobackup/kouatch/GMI/inputData/FJX_spec_06a.dat
+rate_file: /discover/nobackup/kouatch/GMI/inputData/rat_JX_combo_v2.d
+T_O3_climatology_file: /discover/nobackup/kouatch/GMI/inputData/jx_atms.dat
+do_ozone_inFastJX: F 
+
+_EOF_
+
+
+#######################################################################
+#          Advection core Configuration File must include timestep
+#######################################################################
+
+set      FILE = FVadvcore_GridComp.rc
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+
+RUN_DT: $DT
+TEST:   $TEST
+_EOF_
+
+#######################################################################
+#         History Configuration File
+#######################################################################
+
+set      FILE = HISTORY.rc
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+EXPID:  FVadvection_example
+EXPDSC: FVadvection_(ESMF07_EXAMPLE)_5x4_Deg
+
+COLLECTIONS:
+      ::
+_EOF_
+
+#######################################################################
+#         GMI Namelist File
+#######################################################################
+
+set      FILE = $gmiProblemName.in
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+&nlGmiControl
+  numWorkerProcs = $numWorkerProcs,
+  numLonProcs    = $numLonProcs,
+  numLatProcs    = $numLatProcs,
+  gmi_nborder    = $gmi_nborder,
+  i1_gl          = $firstGlobLon,
+  i2_gl          = $lastGlobLon,
+  ju1_gl         = $firstGlobLatU,
+  jv1_gl         = $firstGlobLatV,
+  j2_gl          = $lastGlobLat,
+  k1_gl          = $firstGlobAlt,
+  k2_gl          = $lastGlobAlt,
+  num_species    = $numSpecies,
+  begGmiTime     = $begGmiTime,
+  begGmiDate     = $begGmiDate,
+  endGmiTime     = $endGmiTime,
+  endGmiDate     = $endGmiDate,
+  tdt            = $tdt,
+  leap_year_flag = $leapYearFlag /
+&nlGmiMetFields
+  gmi_data_dir = '/discover/nobackup/kouatch/GMI/inputData/',
+  met_opt     = 3,
+  met_grid_type  = 'A',
+  do_timinterp_met  = F,
+  met_infile_num = 16,
+  mrnum_in       = 1,
+  met_filnam_list = 'jan2004.list',
+  do_read_met_list = T,
+  do_cycle_met = F,
+  gwet_opt = 1,
+  mdt = 10800.0d0 /
+&nlGmiSpeciesConcentration
+  const_opt   = 2,
+  const_infile_name = 'xxx',
+  fixed_const_timpyr = 12,
+  fixedConcentrationSpeciesNames = 'ACET',
+  fixed_const_infile_name = '/discover/nobackup/kouatch/GMI/inputData/fixed_ACET_CH4_gmi_G4agcm_2%5x2x42.nc' /
+&nlGmiDiagnostics
+  problem_name = '$gmiProblemName',
+  do_ftiming  = $do_ftiming,
+  pr_diag  = F,
+  pr_ascii = T,
+    pr_ascii1 = T,
+    pr_ascii2 = T,
+!    pr_ascii2 = F,
+    pr_ascii3 = T,
+    pr_ascii4 = T,
+    pr_ascii5 = T,
+  ascii_out_n = 24,
+  pr_ascii_step_interval = 24,
+  pr_netcdf = T,
+  outmain_name = 'adaily_main',
+  outaerdust_name = 'aerdust',
+  prs_dim_name = 'eta_dim',
+  pr_level_all= T,
+  k1r_gl      = 1,
+  k2r_gl      = 42,
+  pr_const = T,
+  pr_psf = T,
+  pr_kel = T,
+  pr_mass = T,
+  pr_overheadO3col = F,
+  pr_dry_depos = T,
+  pr_wet_depos = T,
+  pr_surf_emiss = T,
+  pr_drydep_all = F,
+  dryDepSpeciesNames = 'CH2O, HNO3, H2O2, MP, NO2, N2O5, O3, PAN, PMN, PPN, R4N2',
+  pr_wetdep_all = F,
+  wetDepSpeciesNames    = 'CH2O, HNO3, H2O2, MP, N2O5',
+  pr_emiss_all = F,
+  surfEmissSpeciesNames = 'CH2O, CO, NO, ALK4, C2H6, C3H8, ISOP, MEK, PRPE',
+  pr_metwater = T,
+  do_mean = T,
+  pr_grid_height = T,
+  pr_flux = T,
+   pr_const_flux      = T,
+   pr_psf_flux        = T,
+   pr_flux_period_days  = 1.0,
+   fluxSpeciesNames = 'CH2O, CH4, CO, HNO3, H2O2, MP, NO, NO2, N2O5, O3, PAN, SYNOZ',
+  pr_sad = T,
+  pr_tend = T,
+  pr_qj = T,
+  pr_qj_o3_o1d = T,
+  pr_qj_opt_depth = T,
+  pr_qk = T,
+  pr_qqjk = T,
+  pr_nc_period_days   = -1.0d0,
+  pr_AerDust = T,
+  freq1SpeciesNames = 'CH4, CO, HNO3, N2O, O3, OH, ClO, Cl2O2, ClONO2, HCl, CFCl3, CF2Cl2',  
+  k1_freq1 = 5,
+  k2_freq1 = 35,
+  pr_const_freq1 = T,
+  pr_metwater_freq1 = T,
+  pr_psf_freq1 = T,
+  pr_kel_freq1 = T,
+  pr_mass_freq1 = T,
+  pr_grid_height_freq1 = T,
+  pr_rel_hum_freq1 = T,
+  do_mean_freq1 = F,
+  do_day1_freq1 = F,
+  do_last_tstep_freq1 =F,
+  freq1_name = 'idaily',
+  freq1_description = 'Daily Instantaneous Output at 12Z',
+  pr_nc_freq1  =  1.d0,
+  at_time_freq1 = 0.5d0,
+  pr_tropopausePress_freq1 = T,
+  pr_potentialVorticity_freq1 = T,
+  freq2SpeciesNames = 'O3',
+  pr_const_surface_freq2 = T,
+  pr_psf_freq2 = T,
+  do_mean_freq2 = F,
+  do_day1_freq2 = F,
+  freq2_name = 'hourlyoz',
+  freq2_description = 'Hourly Surface Ozone',
+  pr_nc_freq2  = 0.04167d0,
+  freq3SpeciesNames = 'O3',
+  pr_const_column_freq3 = T,
+  pr_metwater_freq3 = T,
+  pr_psf_freq3 = T,
+  pr_kel_freq3 = T,
+  pr_mass_freq3 = T,
+  pr_grid_height_freq3 = T,
+  pr_rel_hum_freq3 = T,
+  do_mean_freq3 = F,
+  do_day1_freq3 = F,
+  freq3_name = 'columnoz',
+  freq3_description = 'Daily Instantaneous Column Ozone at 12Z',
+  pr_nc_freq3  =  1.0d0,
+  at_time_freq3 = 0.5d0,
+  do_last_tstep_freq3 = F,
+  pr_tropopausePress_freq3 = T,
+  pr_potentialVorticity_freq3 = T,
+  pr_overpass1 = T,
+  pr_kel_overpass1 = T,
+  pr_psf_overpass1 = T,
+  pr_const_overpass1 = T,
+  pr_totalMass_overpass1 = T,
+  pr_relHumidity_overpass1 = T,
+  pr_gridBoxHeight_overpass1 = T,
+  pr_cloudOptDepth_overpass1 = T,
+  pr_overheadO3col_overpass1 = T,
+  begTime_overpass1 = 9.0d0,
+  endTime_overpass1 = 12.0d0,
+  pr_overpass1_period_days = 1.0d0,
+   overpass1SpeciesNames = 'CH2O, CO, NO, NO2, O3, OH',
+  pr_overpass2 = T,
+  pr_kel_overpass2 = T,
+  pr_psf_overpass2 = T,
+  pr_const_overpass2 = T,
+  pr_totalMass_overpass2 = T,
+  pr_relHumidity_overpass2 = T,
+  pr_gridBoxHeight_overpass2 = T,
+  pr_cloudOptDepth_overpass2 = T,
+  pr_overheadO3col_overpass2 = T,
+  begTime_overpass2 = 12.0d0,
+  endTime_overpass2 = 15.0d0,
+  pr_overpass2_period_days = 1.0d0,
+   overpass2SpeciesNames = 'CH2O, CO, NO, NO2, O3, OH',
+  col_diag_period = 3600.d0,
+  stationsInputFileName = '/discover/nobackup/kouatch/GMI/inputData/colDiagStationList.asc',
+  colDiagStationsNames = 'SPO, MCM, HBA, FOR, NEU, SYO, PSA, MAR, MAQ, TDF, CRZ, LAU, CGO, ASP, CPT, EIC, JOH, REU, NAM, FIJ, TAH, CUI, SMO, PNA, WAT, ASC, NAT, SEY, BRA, MAL, NAI, SNC, CHR, KCO, PAR, TVD, PAN, VEN, RPB, GMI, POO, KUM, MLO, GTK, HON, TAI, ASK, JPI, KEY, NAH, OGA, MID, IZO, KEN, NDI, LZC, WIS, KAG, KLA, KPA, PAT, BME, CHJ, AAZ, CNC, GCT, TAT, GOZ, WLG, OIJ, HAP, TAP, MMO, LWV, RPI, WLI, AZR, PTA, CAG, IRD, RYO, UTA, DFO, NWR, TRH, FWI, HAR, MON, SAP, SOF, KZM, RIK, BIS, GMV, OOR, BSC, MOS, KZD, UUM, CMT, CWI, CMO, LEF, JUN, HUN, PAY, HOH, PRA, UCC, MND, LIN, SHM, EDM, GBO, LGN, MHD, ARK, CBA, BAL, ZVE, BIT, STR, CHU, REY, STM, SOD, BRW, RES, MBC, ZEP, ALT, TA1, TA2, TA3, TA4, TA5, TA6, CLA, PW1, PW2, PW3, PW4, PW5, PW6, PT1, PT2, PT3, PT4, PT5, PT6, IN1, IN2, SX1, SX2, SX3, SX4, SX5, CG2, CMW, PEK, SHA, MAD, BAN, DEL, TEH, TEL, DUB, FRA, NEW, ATL, DAL, CAR, ABI, SAO, JOH, VIE, OSA, TRI, ISF, BOB, CAI, LAG, HUNT, SANT, KUAL, SUVA, MALINDI, PARAMARI, LAREUNI, PAGO, SANCRIS, PAPEE, IRENE, CHI, HOU, SBA',
+  colDiagSpeciesNames = 'CH2O, CO, HNO2, HNO3, HNO4, H2O, HO2, H2O2, NO, NO2, NO3, N2O5, O3, OH, ALD2, ALK4, C2H6, C3H8, ISOP, PAN, PRPE, ACET, Total density, H2OAIR, SYNOZ',
+  col_diag_pres(1:25) = 1000.0d0, 900.0d0, 800.0d0, 700.0d0, 600.0d0,
+                         500.0d0, 400.0d0, 350.0d0, 300.0d0, 250.0d0,
+                         200.0d0, 175.0d0, 150.0d0, 125.0d0, 100.0d0,
+                          90.0d0,  80.0d0,  70.0d0,  60.0d0,  50.0d0,
+                          40.0d0,  30.0d0,  20.0d0,  15.0d0,  10.0d0,
+  pr_const_column = T,
+  pr_tend_all = F,
+  tendSpeciesNames = 'CH2O, CH4, CO, HNO3, H2O2, MP, NO, NO2, N2O5, O3, PAN, SYNOZ' /
+&nlGmiRestart
+  pr_restart = T,
+  do_overwrt_rst = F,
+  pr_rst_period_days = 1.0d0,
+  rd_restart = T,
+  restart_infile_name = '/discover/nobackup/kouatch/GMI/inputData/gmic_fvgcm98_2x2.5_rerun_yr6_dec.rst.nc' /
+&nlGmiAdvection
+  advec_opt = 1,
+  press_fix_opt = 1,
+  advec_flag_default = 1,
+  advectedSpeciesNames = 'CH2O, CH4, CO, H2, HCOOH, HNO2, HNO3, HNO4,
+H2O2, MOH, MP, N2O, NO, NO2, NO3, N2O5, O3, Br, BrCl, BrO, BrONO2,
+HBr, HOBr, Cl, Cl2, ClO, Cl2O2, ClONO2, HCl, HOCl, OClO, CH3Br,
+CH3Cl, CH3CCl3, CCl4, CFCl3, CF2Cl2, CFC113, CFC114, CFC115,
+HCFC22, HCFC141b, HCFC142b, CF2Br2, CF2ClBr, CF3Br, H2402, ACTA,
+ALD2, ALK4, C2H6, C3H8, ETP, HAC, IALD, IAP, ISOP, MACR, MEK, MVK,
+PAN, PMN, PRPE, R4N2, RCHO, RCOOH, DEHYD, SYNOZ',
+  do_var_adv_tstp = T /
+&nlGmiConvection
+  convec_opt = 3  /
+&nlGmiDeposition
+  do_drydep = T,
+  do_wetdep = T /
+&nlGmiEmission
+  emiss_opt    = 2,
+  emiss_in_opt = 2,
+  emiss_conv_flag = 0,
+  semiss_inchem_flag = -1,
+  emiss_timpyr = 12,
+  emiss_var_name =  'emiss',
+  emiss_infile_name = '/discover/nobackup/kouatch/GMI/inputData/Aura_Harvard_2004_Emissions_ship.nc',
+  do_ShipEmission   =   T,
+  emissionSpeciesNames = 'xxx, xxx, NO, NO, NO, NO, NO, CO, CO, CO, MEK, MEK, MEK, PRPE, PRPE, PRPE, C2H6, C2H6, C2H6, C3H8, C3H8, C3H8, ALK4, ALK4, ALK4, ALD2, ALD2, CH2O, CH2O, xxx, xxx, xxx, xxx, HNO3, O3',
+  isop_scale(1:12) = 1., 1., 1., 1., 1., 1.,
+                     1., 1., 1., 1., 1., 1.,
+  fertscal_infile_name  = '/discover/nobackup/kouatch/GMI/inputData/GMIfertscale_2x25_dao.asc',
+  light_infile_name     = '/discover/nobackup/kouatch/GMI/inputData/lighttable.asc',
+  precip_infile_name    = '/discover/nobackup/kouatch/GMI/inputData/GMIprecip_2x25_dao.asc',
+  soil_infile_name      = '/discover/nobackup/kouatch/GMI/inputData/soiltype.asc',
+  veg_infile_name       = '/discover/nobackup/kouatch/GMI/inputData/GMIvegtype_2x25_dao.asc',
+  lai_infile_name       = '/discover/nobackup/kouatch/GMI/inputData/GMIlai_2x25_dao.asc',
+  doMEGANemission          = T,
+  aefMboMEGAN_InfileName   = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_MBO.geos.2x2.5.nc',
+  aefIsopMEGAN_InfileName  = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/NEW_MEGAN_AEF_ISOP.geos.2x2.5.nc',
+  aefMonotMEGAN_InfileName = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_MTP.geos.2x2.5.nc',
+  aefOvocMEGAN_InfileName  = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_OVC.geos.2x2.5.nc',
+  laiMEGAN_InfileName      = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/avhrrlai.global.geos.2x2.5.2000.nc',
+  gcr_infile_name       = '/discover/nobackup/kouatch/GMI/inputData/GCR_1970-2025_33.nc',
+  do_gcr        = F  /
+&nlGmiChemistry
+  chem_opt = 2,
+  do_chem_grp         = T,
+  synoz_threshold = 150.0d-9,
+  chem_cycle = 1.0d0,
+  do_smv_reord = T,
+  do_wetchem = F,
+  loss_opt = 0,
+  do_AerDust_Calc    = T,
+  AerDust_Effect_opt = 0,
+  AerDust_infile_name = '/discover/nobackup/kouatch/GMI/inputData/aerosols_2004_agcm_kg_per_m3_2%5x2x42.nc',
+  forc_bc_opt       = 2,
+  forc_bc_years     = 100,
+  forc_bc_start_num = 34,
+  forc_bc_kmin      = 1,
+  forc_bc_kmax      = 2,
+  forcedBcSpeciesNames = 'CFCl3, CF2Cl2, CFC113, CFC114, CFC115, CCl4, CH3CCl3, HCFC22, HCFC141b, HCFC142b, CF2ClBr, CF2Br2, CF3Br, H2402, CH3Br, CH3Cl, CH4, N2O',
+  forc_bc_infile_name = '/discover/nobackup/kouatch/GMI/inputData/wmo2002_ch4latvar_1970_2069.asc',
+  h2oclim_opt         = 2,
+  h2oclim_infile_name = '/discover/nobackup/kouatch/GMI/inputData/h2o_ch4_clim_2%5x2x42_fvccm.nc',
+  sad_opt = 2,
+  lbssad_opt          = 3,
+  lbssad_infile_name  = '/discover/nobackup/kouatch/GMI/inputData/sad_dbc_2%5x2x42_2000.nc' /
+&nlGmiPhotolysis
+  phot_opt = 3,
+  do_clear_sky = F,
+  uvalbedo_opt = 2,
+  uvalbedo_infile_name = '/discover/nobackup/kouatch/GMI/inputData/uvalbedo.geos.2x2%5.ascii',
+  sfalbedo_opt = 3,
+  cross_section_file    = '/discover/nobackup/kouatch/GMI/inputData/FJX_spec_06a.dat',
+  rate_file             = '/discover/nobackup/kouatch/GMI/inputData/rat_JX_combo_v2.d',
+  T_O3_climatology_file = '/discover/nobackup/kouatch/GMI/inputData/jx_atms.dat',
+  do_ozone_inFastJX = F ,
+  fastj_opt = 1/
+&nlGmiTracer
+  tracer_opt = 0  /
+&nlGmiLightning
+  lightning_opt=1,
+  i_no_lgt=5
+/
+
+_EOF_
+
+#######################################################################
+#                          Run the Model
+#######################################################################
+
+limit stacksize unlimited
+$RUN_CMD  $numWorkerProcs $gmiBIN/$APP_EXE -d $gmiProblemName.in
+
+exit
+

@@ -1,0 +1,192 @@
+\chapter[NetCDF Files]{GMI NetCDF Files} \label{chap:netcdf}
+%
+We list all the NetCDF output files that the GMI code produces.
+For each file we provide:
+\begin{itemize}
+\item The list of variables that can be written out,
+\item The possible output frequencies of the data.
+\end{itemize}
+
+%
+In Table \ref{tab:net3}, we list the netCDF files that could be produced by the code.
+%
+\begin{center}
+\begin{longtable}{|l|l|} \hline\hline
+{\bf File}&  {\bf Description} \\ \hline\hline
+col       &  Column diagnostics at prescribed stations.           \\
+const    & Main output file producing at least species concentrations.   \\
+aerDust   & Mainly outputs optical depth for aerosols. \\
+flux      & File for fluxes.                \\
+freq$\#$ & Outputs selected variables at any specified frequency.         \\
+overpass$\#$ & Outputs selected variables that are produced at a prescribed time range.    \\
+qj        &  File for photolysis rate constants.    \\
+qk        &  File for thermal rate constants    \\
+qqjk      &  File for rates of photolytic and thermal processes.     \\
+restart   &  Restart file.      \\ 
+sad       &  File for surface area densitity related variables.    \\
+cloud     &  File containing cloud related variables. \\
+tend      &  Tendencies file.     \\ \hline\hline
+\caption{GMI netCDF files. Here $\#$ is 1, 2, 3, or 4.}
+\label{tab:net3}
+\end{longtable}
+\end{center}
+%
+\noindent
+All the output files contain at least the following variables (if necessary):
+%
+\begin{itemize} 
+\item[{\bf ai}] Hybrid pressure edge term
+\item[{\bf bi}] Hybrid sigma edge term
+\item[{\bf am}] Hybrid pressure term
+\item[{\bf bm}] Hybrid sigma term
+\item[{\bf pt}]
+\item[{\bf pressure}] Pressure (mb)
+\item[{\bf latdeg}] Latitude (deg)
+\item[{\bf londeg}] Longitude (deg)
+\item[{\bf mcor}] Grix box area (m$^2$)
+\item[{\bf nymd}] Current date (YYYYMMDD)
+\item[{\bf nhms}] Current time (HHMMSS)
+\end{itemize}
+
+Table \ref{tab:net1} gives a summary of the information contained in
+the netCDF files introduced in Section \ref{sec:netcdfout}. 
+%
+
+\begin{center}
+\begin{longtable}{|l|r|l|l|l|} \hline\hline
+{\bf File} & {\bf Default Suffix} & {\bf Variables} & {\bf Mean} & {\bf Snapshot} \\ \hline\hline
+%
+col   &   .col.nc   & psf               &      &    X      \\
+      &             & humidity          &      &    X      \\
+      &             & pot\_temp         &      &    X      \\ 
+      &             & const             &      &    X      \\ \hline
+%
+const &   .const.nc & const             & X    &    X      \\
+      &             &  psf              & X    &    X       \\
+      &             &  kel              & X    &    X      \\
+      &             &  relHumidity      & X    &    X      \\
+      &             &  gridBoxHeight    & X    &    X      \\
+      &             & tropopausePress   & X    &    X      \\
+      &             & potentialVorticity& X    &        \\ 
+      &             &  overheadO3Col    & X    &    X      \\
+      &             &  drydep           &      &  accum.   \\
+      &             &  wetdep           &      &  accum.   \\
+      &             &  semiss\_out      &      &  accum.   \\
+      &             & aerosolSurfEmiss  &      &  accum.   \\
+      &             &  emiss\_3d\_out   &      &  accum.   \\
+      &             &  aerosolEmiss3d   &      &  accum.   \\
+      &             &  lightning\_no    &      &  accum.   \\
+      &             &  flashrate        &      &  accum.   \\
+      &             &convectiveMassFlux &      &  accum.   \\
+      &             &  mass             & X    &    X      \\
+      &             &  metwater         & X    &    X      \\
+      &             &  dms\_oh          & X    &    X      \\
+      &             &  dms\_no3         & X    &    X      \\
+      &             &  so2\_oh          & X    &    X      \\
+      &             &  so2\_h2o2        & X    &    X      \\ 
+      &             &  so2\_o3          & X    &    X      \\ \hline
+%
+aeroDust     & .aerodust.nc     & optDepth    & X    &    X     \\    
+             &                  &aerosol column mass& X    &    X     \\
+             &                  &psf                & X    &    X     \\ 
+             &                  &gridBoxHeight      & X    &    X     \\ \hline
+%
+overpass$\#$ & .overpass$\#$.nc & const        & X    &    X     \\
+             &                  & relHumidity  & X    &          \\
+             &                  & gridBoxHeight& X    &          \\
+             &                  & tropopausePress& X    &    X     \\
+             &                  & mass         & X    &          \\
+             &                  & psf          & X    &    X     \\
+             &                  & kel          & X    &    X     \\
+             &                  & cloudOptDepth& X    &    X     \\
+             &                  & overheadO3Col& X    &    X     \\
+             &                  & metwater     & X    &          \\
+             &                  & qj           & X    &          \\
+             &                  & qqj          & X    &          \\ 
+             &                  & qqk          & X    &          \\ \hline
+freq$\#$     &  .freq$\#$.nc    & const        & X    &          \\
+             &                  & const\_column& X    &     X    \\
+             &                  & const\_surface & X   &    X    \\
+             &                  & psf            & X   &    X    \\
+             &                  & kel            & X   &    X    \\
+             &                  & mass           & X   &    X    \\
+             &                  & gridBoxHeight    & X   &  X      \\
+             &                  & relHumidity      & X   &  X      \\
+             &                  & metwater         & X   &  X      \\
+             &                  & overheadO3col    & X   &  X      \\
+             &                  & tropopausePress& X   &    X    \\
+             &                  & potentialVorticity& X &   X    \\ \hline
+%
+cloud        & .cloud.nc        & relHumidity       & X & X     \\
+             &                  & psf               & X & X     \\
+             &                  & kel               & X & X     \\
+             &                  & mass              & X & X     \\
+             &                  & gridBoxHeight     & X & X     \\
+             &                  & cloudFraction     & X & X     \\
+             &                  & liqWaterPath      & X & X     \\
+             &                  & effectiveRadii    & X & X     \\
+             &                  & cloudOpticalDepth & X & X     \\
+             &                  & totAerosolSulfate & X & X     \\
+             &                  & cloudDroplet      & X & X     \\
+             &                  & cloudAlbedo       & X & X     \\ \hline
+%
+Mass Flux    &   .flux.nc       & const\_flux\_x & X    &    X     \\
+             &                  & const\_flux\_y & X    &    X     \\
+             &                  & const\_flux\_z & X    &    X     \\
+             &                  & psf            & X    &         \\
+             &                  & amf            & X    &    X     \\ \hline
+%
+qj    &   .qj.nc    & qj                & X    &    X     \\
+      &             &  opt\_depth       & X    &    X     \\
+      &             &  O3+hv$->$O1D     & X    &    X     \\ \hline
+%
+qk    &   .qk.nc    & qk                & X    &    X     \\ \hline
+%
+qqjk  &   .qqjk.nc  & qqj               & X    &    X      \\
+      &             & qqk               & X    &    X      \\
+      &             & yda               &      &    X      \\ \hline
+%
+restart & .rst.nc   & const             &      &    X      \\
+        &           & h2ocond           &      &    X      \\
+        &           & pctm2             &      &    X      \\ \hline
+%
+sad     & .sad.nc   & sad               & X    &    X      \\
+        &           & hno3cond          & X    &    X      \\
+        &           & hno3gas           & X    &    X      \\
+        &           & h2oback           & X    &    X      \\
+        &           & h2ocond           & X    &    X      \\
+        &           & reffsts           & X    &    X      \\
+        &           & reffice           & X    &    X      \\
+        &           & vfall             & X    &    X      \\ \hline
+%
+tend    & .tend.nc  & ncumt             &      &    X     \\ \hline\hline
+%
+\caption{Content of each GMI netCDF output file.}
+\label{tab:net1}
+\end{longtable}
+\end{center}
+
+%
+For each of the files in Section \ref{sec:netcdfout}, we provide in 
+Table \ref{tab:net2} the frequency in which data can be written in the file.
+
+\begin{center}
+\begin{longtable}{|l|c|c|c|c|c|c|} \hline\hline
+{\bf File}         &{\bf Same Freq}   &{\bf Indepen Freq}& {\bf Monthly} &  {\bf 1st \& 15th} & {\bf Any freq} & {\bf Last Step} \\ \hline\hline
+const        &         X  &            &   X     &     X        &      &  X  \\
+aeroDust     &         X  &            &   X     &     X        &      &  X  \\
+cloud        &         X  &            &   X     &     X        &      &  X  \\
+qj           &         X  &            &   X     &     X        &      &  X  \\
+qk           &         X  &            &   X     &     X        &      &  X  \\
+qqjk         &         X  &            &   X     &     X        &      &  X  \\
+sad          &         X  &            &   X     &     X        &      &  X  \\
+tend         &         X  &            &   X     &     X        &      &  X  \\
+Mass Flux    &            &      X     &   X     &     X        &      &  X  \\
+overpass$\#$ &            &      X     &   X     &     X        &      &  X  \\
+freq$\#$     &            &      X     &   X     &     X        &  X   &  X  \\
+restart      &            &      X     &   X     &     X        &      &  X      \\
+col          &            &      X     &         &              &      &    \\ \hline\hline
+\caption{ Frequency of GMI netCDF output files.}
+\label{tab:net2}
+\end{longtable}
+\end{center}

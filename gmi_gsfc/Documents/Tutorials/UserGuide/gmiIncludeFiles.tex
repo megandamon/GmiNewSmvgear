@@ -1,0 +1,74 @@
+\chapter[Include Files]{Include Files} \label{chap:inc_files}
+
+The files presented here are located in {\em Config/} directory.
+They are required for the preprocessing and compilation of the
+code. 
+%Any modification of these files leads to the execution of the
+%commands {\tt mkmf} for the creation of the Makefile file and
+%{\tt make} in order to obtain a new executable.
+
+\vskip 0.5cm
+\noindent
+{\em gem\_config.h} ,{\em compiler.mk} and {\em libraries.mk}
+\newline
+Sets configuration parameters for gem Makefiles.
+The following information must be provided:
+\begin{itemize}
+\item Location of the netCDF include files (variable {\em INCLUDES\_NETCDF}) 
+      and library ({\em NETCDFLibs})
+\item Location of the ESMF include files (variable {\em INCLUDES\_Esmf}) 
+      and library ({\em EsmfLibs})
+\item Location of the MPI include files (variable {\em INCLUDES\_MSG})
+      and library ({\em MSGLIBDIR})
+\item Commands to call the C (variable {\em CC}) and Fortran ({\em FC})
+      compilers.
+\item Compilations options.
+\end{itemize}
+
+
+\vskip 0.5cm
+\noindent
+{\bf gem\_options.h}
+\newline
+To select the package, the chemical solver, and the desire
+compilation mode (debugging, optimization, profiling).
+
+
+\vskip 0.5cm
+\noindent
+{\bf gem\_sys\_options.h}
+\newline
+To select the architecture and the message passing options.
+The user must set the variables:
+\begin{itemize}
+\item {\em ARCH\_OPTION}: to determine the platform used.
+\item {\em MSG\_OPTION}: for the message passing option.
+      Choose {\em MSG\_NONE} if you want the single processor
+      version of the code, or {\em MSG\_MPI} if you prefer
+      the multiple processor one with MPI as message passing.
+\item {\em MPI\_2\_OPTION}: to determine if you want to include
+      or not MPI-2 calls. Consider {\em NO\_MPI\_2} if the platform
+      you will be running the code on does not support MPI-2.
+      Otherwise choose {\em WITH\_MPI\_2}.
+\end{itemize}
+
+\vskip 0.5cm
+\noindent
+{\bf gem\_msg\_numbers.h}
+\newline
+Contains the message numbers used to identify specific
+messages in the message passing calls.
+Should not be edited.
+
+\vskip 0.5cm
+\noindent
+{\bf gem\_rules.h} and {\em rules.mk}
+\newline
+Contains suffix dependencies and compilation rules for all
+Makefile/Makefile.cpp files in directories that contain source files.
+Should not be edited.
+
+\vskip 0.5cm
+\noindent
+With time, we will make necessary changes to remove all the ".h" files and
+only keep the ".mk" ones.

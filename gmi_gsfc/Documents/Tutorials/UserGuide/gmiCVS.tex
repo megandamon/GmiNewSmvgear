@@ -1,0 +1,329 @@
+\chapter[How to Use CVS]{How to Use CVS} \label{chap:cvs}
+
+\section{What is CVS?}
+%
+CVS is an acronym for the "Concurrent Versions System". 
+It is a "Source Control" or "Revision Control" tool having the following
+features:
+%
+\begin{itemize}
+\item Non-proprietory and can be downloaded from the internet;
+\item Allows users to work simultaneously on the same file, keep track of changes 
+      by revision, tag and date;
+\item Can obtain an earlier version of the software easily;
+\item Allows the user to track the supplier's software releases while making
+      code changes locally.
+\item Enables the user to merge code changes between his version and supplier's
+      automatically and identify problems if merge presents contradictions;
+\item A user of CVS needs only to know a few basic commands to use the tool.
+\end{itemize}
+%
+Here are some important terms used with CVS:
+%
+\begin{description}
+\item[Repository:] The directory storing the master copies of the files. 
+     The main or master repository is a tree of directories. 
+\item[Module:] A specific directory (or mini-tree of directories) in the 
+     main repository. Modules are defined in the CVS modules file.
+\item[RCS:] Revision Control System. A lower-level set of utilities on 
+     which CVS is layered.
+\item[Check out:] To make a copy of a file from its repository that can 
+     be worked on or examined.
+\item[Revision:] A numerical or alpha-numerical tag identifying the version of a file.
+\end{description}
+
+\section{How to Use CVS}
+%
+There are two ways you can use CVS:
+%
+\begin{enumerate}
+\item Use CVS to keep up-to-date with the GMI code changes.
+      This will require a {\em sourcemotel} account.
+%      If you would like to do this without login on to {\em sourcemotel}, you
+%      need to install CVS on your local machine.
+\item Use CVS to track both GMI code releases and your own changes.
+      You can do this either on {\em sourcemotel} or on your local machine
+     (with your own CVS installation).
+\end{enumerate}
+
+\section{Use CVS to Keep Up-to-Date with GMI Source Code Changes}
+%
+CVS is used to keep track of collections of files in a shared directory called 
+"The Repository". 
+Each collection of files can be given a "module" name, which is used to "checkout" 
+that collection.
+%
+After checkout, files can be modified (using your favorite editor), "committed" back 
+into the Repository and compared against earlier revisions. 
+Collections of files can be "tagged" with a symbolic name for later retrieval.
+%
+You can add new files, remove files you no longer want, ask for information about sets 
+of files in three different ways, produce patch "diffs" from a base revision and merge 
+the committed changes of other developers into your working files.
+%
+In this section, we explain how these operations are done with the GMI code.
+It is assumed that the user has an account on {\em sourcemotel} and that CVS is
+installed on his local computer.
+
+We assume that you have already obtained a copy of the code (say the most recent
+release) from {\em sourcemotel} by using the command:
+%
+\begin{verbatim}
+        %cvs -d usrid@sourcemotel.gsfc.nasa.gov:/cvsroot/gmi co gmi_gsfc
+\end{verbatim}
+%
+A directory labeled {\em gmi\_gsfc} (containing the code) will be created at the 
+location where the command was executed.
+
+Assume that you want to know all the different available releases 
+(with the associated tags) of the GMI code.
+From the {\em gmi\_gsfc} directory, type
+%
+\begin{verbatim}
+        %cvs status -v Makefile
+\end{verbatim}
+%
+to obtain the status of the file {\em Makefile}.
+The results give (first few lines):
+%
+\begin{verbatim}
+===================================================================
+File: Makefile          Status: Up-to-date
+
+   Working revision:    1.18
+   Repository revision: 1.18    /cvsroot/gmi/gmi_gsfc/Makefile,v
+   Sticky Tag:          (none)
+   Sticky Date:         (none)
+   Sticky Options:      (none)
+
+   Existing Tags:
+        fromGEMHOME_to_GMIHOME          (revision: 1.18)
+        NOxEmissionsScalingFactors_v3   (revision: 1.17)
+        NOxEmissionsScalingFactors_v2   (revision: 1.17)
+        Lightning_Branch_fvgcm_ap1_0    (revision: 1.14)
+        NOxEmissionsScalingFactors_v1   (revision: 1.17)
+        Lightning_Branch_fvgcm_default  (revision: 1.14)
+        Lightning_Branch_DAS_default_fix        (revision: 1.14)
+        Lightning_Branch_DAS_default    (revision: 1.14)
+        Lightning_Branch_DAS_ap1_0      (revision: 1.14)
+        SurfaceConstituents_for_ColumnDiagnostics       (revision: 1.17)
+        ImplementationMEGANv1           (revision: 1.17)
+        Flux_Freq_Routines_in_Modules   (revision: 1.16)
+        GeorgiaTechCloudModule_v2       (revision: 1.16)
+        HorizontalDomainForFreqOutputs  (revision: 1.16)
+        GeorgiaTechCloudModule_v1       (revision: 1.16)
+\end{verbatim}
+%
+One can observe that the code has four revisions (1.18, 1.17, 1.6 and 1.14)
+in the above tags.
+%
+\begin{verbatim}
+        %cvs export [-D today][-r tag] gmi_gsfc
+\end{verbatim}
+%
+gives an exported version of the {\em gmi\_gsfc} directory.
+The expressions in $[$ $]$ are options.
+`-D today' gives the latest version of the code.
+The user can also specify "-D 'September 26, 2007'" (note that the date is in single quotes)
+for the version from that day, or use '-r release-1-17' for release 1.17
+(release-1-17 is a CVS tag), or '-r NOxEmissionsScalingFactors\_v3' for the
+{\em gmi\_gsfc} directory with tag NOxEmissionsScalingFactors\_v3.
+
+\begin{verbatim}
+        %cvs checkout gmi_gsfc
+\end{verbatim}
+%
+provides in addition to exported version, CVS information.
+With such information, users will be able to keep up-to-date with our release
+automatically with the simple {\tt cvs update} command (instead of having to manually
+insert the changes we broadcast).
+Once you check out a version of the code, you form a 'working directory'.
+
+\begin{verbatim}
+        %cvs update gmi_gsfc
+\end{verbatim}
+%
+only works if a user has a cvs-checked-out version.
+This brings the changes made in the master repository to the user's working
+directory. 
+The user may only want to know which files were modified without making any
+update:
+%
+\begin{verbatim}
+        %cvs -n update gmi_gsfc
+\end{verbatim}
+%
+An example of the print out from the cvs update command:
+%
+\begin{example}
+You want to checkout a copy of the GMI code from {\em sourcemotel}.
+Then type
+%
+\begin{verbatim}
+        %cvs checkout gmi_gsfc
+\end{verbatim}
+%
+It creates a copy of the code in your own directory.
+Assume someone else has made some changes in the code and the next code release is available.
+You can simply do a {\tt cvs update} to bring the new changes in the new release
+into your copy:
+%
+\begin{verbatim}
+        %cd gmi_gsfc
+        %cvs update 
+\end{verbatim}
+%
+A list is printed on your screen to let you know which files were updated 
+(a 'U' in front of the file) from the new release, and which files were modified 
+(a 'M' in front of the file) and any conflict that may result from this update.
+\end{example}
+
+\begin{remark}
+Note that doing {\bf cvs update} under the {\em gmi\_gsfc} directory will automatically
+update the entire code. You can update an individual directory or file by going into
+the directory and issuing {\bf cvs update}- which updates that directory and any
+sub-directories, or {\bf cvs update filename}- which updates only that file.
+\end{remark}
+
+\begin{verbatim}
+        %cvs diff filename
+\end{verbatim}
+
+This does the differencing between the file in your working repository with the one
+you checked out from the {\em sourcemotel} repository.
+
+\begin{example}
+Assume that you want to compare the file {\em Makefile} (inside gmi\_gsfc) from your 
+working repository with the one on {\em sourcemotel} in the release with TAG
+{\em NOxEmissionsScalingFactors\_v3}:
+
+\begin{verbatim}
+        %cvs diff -r NOxEmissionsScalingFactors_v3 Makefile
+
+        Index: Makefile
+        ===================================================================
+        RCS file: /cvsroot/gmi/gmi_gsfc/Makefile,v
+        retrieving revision 1.17
+        retrieving revision 1.18
+        diff -r1.17 -r1.18
+        9,11c9
+        < LIBS = -L$(LIB_DIR) 
+        < 
+        < #FFLAGS+=$(INCS)
+        ---
+        > LIBS = -L$(LIB_DIR)
+        38,39c36,37
+        < #all: packageddir shared components
+        < all: packageddir shared components applications
+        ---
+        > new: packageddir shared components applications
+        > all: packageddir shared components applications legacy
+        48a47,49
+        > legacy:
+        >       (cd $(GMIHOME)/gem; $(MKMF); make)
+        > 
+        57,58c58,59
+        < #     @$(MAKE) -C $(APPLICATIONS) EmissionDriver.ex
+        < #     @$(MAKE) -C $(APPLICATIONS) DiffusionDriver.ex
+        ---
+        > #       @$(MAKE) -C $(APPLICATIONS) EmissionDriver.ex
+        > #       @$(MAKE) -C $(APPLICATIONS) DiffusionDriver.ex
+        68a70
+        >       (cd $(GMIHOME)/gem; make clean)
+\end{verbatim}
+\end{example}
+%
+To list log messages and status of the master repository, issue the command:
+%
+\begin{verbatim}
+        %cvs log filename
+\end{verbatim}
+
+\section{Use CVS to Track Both New Releases and Your Changes}
+%
+If you want to maintain your own code and keep track of the changes
+from {\em sourcemotel}, what you should do is create your own repository
+and use the `vendor branch' concept in CVS.
+If you do it from your local machine, set
+
+\begin{verbatim}
+        setenv CVSROOT some-home-directory-on-your-local-machine
+\end{verbatim}
+   (e.g. setenv CVSROOT /home/userID/gmi\_ repository)
+
+in your {\em .cshrc} file.
+
+To initialize the repository, type
+
+\begin{verbatim}
+        %cd /home/userid/gmi_repository
+        %cvs init
+\end{verbatim}
+
+Now you can checkout any release of the GMI code.
+Assume that you want to obtain the release 
+{\em HorizontalDomainForFreqOutputs}
+%
+\begin{verbatim}
+        %cvs -d usrid@sourcemotel.gsfc.nasa.gov:/cvsroot/gmi co -r  \
+             HorizontalDomainForFreqOutputs gmi_gsfc
+\end{verbatim}
+%
+If you only want the {\em Components/} directory, type
+%
+\begin{verbatim}
+        %cvs -d usrid@sourcemotel.gsfc.nasa.gov:/cvsroot/gmi co -d Components -r  \
+             HorizontalDomainForFreqOutputs gmi_gsfc/Components
+\end{verbatim}
+%
+You can now work with the code.
+If you make some changes and want to bring them to your repository to keep, do the
+following from the directory {\em gmi\_repository/gmi\_gsfc}:
+%
+\begin{verbatim}
+        %cvs diff > output.diff
+        %cvs update
+        %cvs commit -m 'message for the commit'
+\end{verbatim}
+%
+%
+If you want to create a new file that does not exist in the repository and
+you want to add it in the repository, type (from the directory where the
+new file resides)
+%
+\begin{verbatim}
+        %cvs add new_file
+\end{verbatim}
+%
+%
+\begin{example}
+Assume that you want to add a new chemical mechanism, {\tt new\_chem}.
+In the directory {\em Components/GmiChemistry/mechanisms}, you have 
+created the directory {\tt new\_chem/} that contains the subdirectories 
+{\em include\_setkin/} and {\em setkin/}.
+To add the directory structure of the new chemical mechanism into the
+repository, do the following:
+%
+\begin{verbatim}
+        %cd Components/GmiChemistry/mechanisms
+        %cvs add new_chem/
+        %cvs commit new_chem/
+        %cd new_chem
+        %cvs add include_setkin/
+        %cvs commit include_setkin/
+        %cd include_setkin
+        %cvs add *
+        %cd ../
+        %cvs add setkin/
+        %cvs commit setkin/
+        %cd setkin
+        %cvs add *
+\end{verbatim}
+%
+\end{example}
+
+\section{Where To Obtain CVS}
+
+\begin{verbatim}
+       https://ccvs.cvshome.org/servlets/ProjectDocumentList
+\end{verbatim}

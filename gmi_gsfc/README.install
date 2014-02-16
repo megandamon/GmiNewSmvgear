@@ -1,0 +1,106 @@
+
+==============================================================================
+
+ $Id: README.install,v 1.5 2010-02-10 18:14:01 kouatch Exp $
+
+ README.install
+
+ This file contains directions for installing and running GMI on the
+ following machines:
+
+   Compaq TC2000  (e.g., halem.gsfc.nasa.gov,  tc2k.llnl.gov)
+   IBM    SP      (e.g., cheetah.ccs.ornl.gov, frost.llnl.gov,
+                         seaborg.nersc.gov)
+   Intel  cluster (e.g., discover.gsfc.nasa.gov)
+   SGI    Origin  (e.g., jimpf0.nas.nasa.gov)
+
+ -----------------------------------
+ For additional information contact:
+ -----------------------------------
+ 
+   Jules Kouatchou
+   Jules.Kouatchou-1@nasa.gov
+   301-286-6059
+
+==============================================================================
+
+------
+Login:
+------
+
+*  First, log into the target machine:
+     Compaq TC2000, IBM SP, Intel cluster, SGI Origin
+
+--------------------
+Installing the code:
+--------------------
+
+*  GMI requires the following packages:
+
+   o baselibs libraries
+
+*  Edit the file gmi_setup:
+   Select the chemical mechanism by setting the variable "chemcase".
+
+* Source the file gmi_setup by typing:
+
+       source gmi_setup
+
+-----------------------------------------------
+Modifying, recompiling, and relinking the code:
+-----------------------------------------------
+
+After modifying any source files, do one of the following =>
+
+  * If you want to be absolutely certain that everything gets taken care of,
+    type:
+      cd $gmi
+      gmake all
+
+  * Sometimes it is a good idea to start with a fresh slate after repeated
+    re-compilations or a large number of changes.  To re-compile and re-link
+    all of the files in the GMI directory tree, type:
+      cd $gmi
+      gmake distclean
+      gmake all
+
+The executable gmi.x will be located in the directory
+
+    $gmi/Applications/GmiBin
+
+----------------------------
+Setting up a problem to run:
+----------------------------
+
+----------------------------------------
+Machine-Dependent execution line syntax:
+----------------------------------------
+
+* Compaq TC2000 (tckk) =>
+
+    prun -N <num_nodes> -n <num_procs> -p pdebug \
+      $gmi/Applications/GmiBin/gmi.x
+
+    To run with totalview (more details in README.debug) =>
+
+      totalview prun -a -N <num_nodes> -n <num_procs> -p pdebug \
+        $gmi/Applications/GmiBin/gmi.x
+
+* IBM SP (seaborg) =>
+
+    poe $gmi/Applications/GmiBin/gmi.x \
+      -nodes <num_nodes> -procs <num_procs> -retry 30 -retrycount 60
+
+    To run with totalview (more details in README.debug) =>
+
+      totalview poe -a $gmi/Applications/GmiBin/gmi.x  \
+        -nodes <num_nodes> -procs <num_procs> -retry 30 -retrycount 60
+
+* Intel =>
+
+    mpirun -np <num_procs> $gmi/Applications/GmiBin/gmi.x
+
+* SGI Origin    =>
+
+    mpirun -np <num_procs> $gmi/Applications/GmiBin/gmi.x
+

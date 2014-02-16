@@ -1,0 +1,123 @@
+%
+\chapter[Parallel Performance]{Parallel Performance}
+\label{chap:performance}
+
+Over the past few years, the GMI code has evolved to become a
+componentized software package.
+The code has been subject to many modifications in terms of
+software design and implementation.
+These modications may add overheads in the computing time and
+may lead to the deterioration of the parallel performance of the code.
+Therefore it is important to continually monitor the performance
+of GMI by profiling the code and by studying how the code scales
+across processor.
+
+Profiling a code can be defined as the use of software tools to measure
+a program's run-time characteristics and resource utilization.
+It is important to identify where the bottlenecks are
+and why these areas might be causing problems.
+By utilizing profiling tools and techniques, we want to learn which
+areas of the code offer the greatest potential performance increase.
+We want to target the most time consuming and frequently executed portions
+of the program for optimization with the objective of reducing the
+overall wall clock execution time.
+
+In this chapter, we only provide a simple analysis to verify if the
+current version of the code produces similar performance with respect
+to previous versions.
+The model integration was carried out on {\em discover}:
+%
+\begin{enumerate}
+\item Linux Networx Cluster
+\item 2560 CPUs
+\item Four processors per node
+\item 160 GB disk, 4 GB of RAM per node
+\item 3.2 GHz of processor speed
+\end{enumerate}
+%
+We use the combined stratosphere/troposphere chemical mechanism:
+\begin{itemize}
+\item 124 species
+\item 121 chemical species
+\item 117 active chemical species
+\item 68 advected species
+\item $2 \times 2.5$ honrizontal resolution and 42 vertical levels
+\item model time step of 30 minutes
+\item one-day integration
+\end{itemize}
+%
+We ran the code using 63 and 121 worker processors respectively and 
+recorded the timing information (obtained by setting the resource file 
+variable {\em do\_ftiming}):
+%
+\begin{verbatim}
+9x7 = 63 worker processors
+   -----------------------------------------------------------------
+      Block                       Min Time    Max Time    Avg Time
+   -----------------------------------------------------------------
+   whole_GMI                      842.9362    843.0141    842.9601
+   -----------------------------------------------------------------
+   gmiTimeStepping                773.3378    775.4813    774.0801
+      procSyncBegStepping           1.0650      3.2106      1.8059
+      gmiEmission                   7.5113      8.0610      7.5410
+      gmiDiffusion                  2.0009      2.3482      2.1170
+      procSyncBeforeAdvection       0.2282      1.1347      1.0033
+      gmiAdvection                 77.9177     78.9366     78.8842
+      gmiConvection                 4.6655     12.6235      8.4833
+      gmiDryDeposition              0.5783      1.1403      0.7806
+      gmiWetDeposition              7.1136      8.9838      7.9951
+      gmiChemistry                140.5785    497.1423    341.6406
+         gmiPhotolysis              5.1924     48.1437     29.2000
+      procSyncEndStepping         169.4039    523.4902    322.9148
+   gmiWritingOutput                35.1658     45.5605     44.0967
+
+11x11 = 121 worker processors
+   -----------------------------------------------------------------
+      Block                       Min Time    Max Time    Avg Time
+   -----------------------------------------------------------------
+   whole_GMI                      541.0739    541.1197    541.1028
+   -----------------------------------------------------------------
+   gmiTimeStepping                461.5172    467.9213    464.6045
+      procSyncBegStepping           0.9933      7.4049      4.0861
+      gmiEmission                  11.0396     12.0051     11.2219
+      gmiDiffusion                  0.7928      1.3231      1.0657
+      procSyncBeforeAdvection       0.6895      2.1456      1.7608
+      gmiAdvection                 55.3105     56.1626     55.8819
+      gmiConvection                 1.6163      6.0775      4.1244
+      gmiDryDeposition              0.2393      0.4921      0.3519
+      gmiWetDeposition              3.7472      5.0127      4.3225
+      gmiChemistry                 40.9454    322.2511    175.7995
+         gmiPhotolysis              0.4408     28.4638     15.5451
+      procSyncEndStepping          57.8476    343.3024    205.5430
+   gmiWritingOutput                29.5422     35.9619     34.0993
+\end{verbatim}
+%
+Note the following remarks:
+%
+\begin{enumerate}
+\item The profiling is done on the worker processors only and does not 
+      included the intialization stage.
+\item The presented timing numbers mainly included the profiling of the 
+      time stepping routine, gmiTimeStepping:
+      \begin{itemize}
+      \item At the beginning of the routine there is an MPI barrier call 
+            (procSyncBegStepping)
+      \item At the end of the routine there is an MPI barrier call 
+            (procSyncEndStepping)
+      \end{itemize}
+\item The Chemistry component is called at the end of gmiTimeStepping. 
+      If we focus on gmiChemistry and procSyncEndStepping, we observe a 
+      load inbalance within Chemistry. It is more likely due to the solver 
+      where the tasks assigned to each processor are not evenly divided. 
+\item Note that there are only 68 advected species while 117 active chemical 
+      species are used. In a previous study (done in 2004), it was observed 
+      that if Advection and Chemistry have the same number of species, 
+      Advection will dominate calculations as the number of processors increases.
+      It was recommended then to reduce the number of advected species.
+      It is no surprise that Advection is less computational intensive
+      than Chemistry.
+\item The computing time decreases as the number of processors increases
+      with a gain of about $38\%$ in time.
+\item The results shown here are consistent with what was obtained using
+      previous versions of the code.
+\end{enumerate}

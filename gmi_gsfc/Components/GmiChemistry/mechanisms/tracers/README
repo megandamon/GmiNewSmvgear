@@ -1,0 +1,90 @@
+Summary of the tracers in this "mechanism":
+
+====
+Age:
+
+ Tracer emitted for first 30 days from 10N to 10S, surface to 800 hPa - set to 1.0
+ After 30 days the source region becomes a sink region - set to 0.0
+
+====
+e90:
+ 
+ e90 emitted at the surface such that the global burden is 100ppbv
+ e90 loss is 90 day efold time
+ 
+====
+tm25:
+
+ Tracer is fixed in the stratosphere to 200ppbv
+ Tropopause determined by function: P = 230-148*(cos(lat))**4 (units: hPa) => P_tropopause = 82 hPa at the equator and 230 hPa at the poles
+ tm25 destroyed with 25 day efold time in "troposphere"
+
+====
+Radon/Lead:
+
+ Radon emitted over land (1 atoms/cm^2/s), limited by temperature (273K drops emission to 0.6 atoms/cm^2/s) and snow/ice cover eliminate emission
+ Radon emitted over ocean (0.005 atoms/cm^2/s)
+ Radon decayed to lead with an efold time of 5.5 days
+ Radon washed out (hstar=.0093)
+ Lead settled out as aerosol
+
+====
+Beryllium 7 and 10 and stratospheric Beryllium 7 and 10:
+
+ Tracers emitted according to a function that depends on latitude and pressure (Koch table) 
+ Beryllium 7 decayed to boron (not carried) with an efold time of 53.3 days
+ Beryllium 10 decayed to boron (not carried) with an efold time of 5.84d8 days
+ Beryllium 7 and 10 settled out as aerosols
+
+====
+CH3I: 
+
+ Tracer emitted over oceans (1 molecule/cm^2/s)
+ Decayed with an efold time of 5 days
+ CH3I washed out (hstar=.14)
+
+====
+fCO2: 
+
+ Emitted at the surface according to Prather's data
+ CO2 washed out (hstar=.036)
+
+====
+Linoz:
+
+ Linearized ozone parameterization.
+
+====
+Synoz:
+
+ Synthetic ozone emitted in the tropical lower stratosphere - 30N to 30S, 10 to 70 hPa
+ Source flux of 550 Tg/yr
+ synoz lost at the surface - relaxed to 2.5e-8 with 2 day time
+
+====
+SF6:
+
+ SF6 parameterized chemistry. 
+ Emitted at surface 
+ Loss is through photolysis and O1D (read in parameters)
+
+====
+CLOCK:
+
+ Add timestep (units: days) everywhere and set bottom layer to 0.0 every time step
+
+====
+Uniform:
+
+ Tracer emitted uniformly at surface.
+ Tracer decays with 25 day efold
+ Surface emissions of 2400 Tg/yr.
+
+====
+Strat_O3:
+
+ Stratospheric ozone fixed according to previous full chem run (read in)
+ troposphere (determined from e90) has parameterized loss using O1D, H2O, OH, and HO2
+   from full chem run results and no sources
+
+====

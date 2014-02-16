@@ -1,0 +1,157 @@
+#
+# Makefile for ESMA components.
+#
+# REVISION HISTORY:
+#
+# 03mar2004  Zaslavsky  Initial imlementation.
+# 20Oct2004  da Silva   Standardization
+# 29mar2005  da Silva   Added dependencies, cleaned up.
+#
+
+# Make sure ESMADIR is defined
+# ----------------------------
+ifndef ESMADIR
+       ESMADIR := $(shell pwd)/../../../..
+endif
+
+# Compilation rules, flags, etc
+# -----------------------------
+  include $(ESMADIR)/Config/ESMA_base.mk  # Generic stuff
+  include $(ESMADIR)/Config/ESMA_arch.mk  # System dependencies
+  include $(ESMADIR)/Config/GMAO_base.mk 
+
+# Allow user to select NetCDF instead of default NETCDF
+# -----------------------------------------------------
+ifdef USE_NETCDF
+   INC_SDF = $(INC_NETCDF)
+   LIB_SDF = $(LIB_NETCDF)
+endif
+
+#DIR_SDF = /home/dasilva/src/netcdf-3.6.1/src/NewNetCDF
+#INC_SDF = $(DIR_SDF)/include
+#LIB_SDF = $(DIR_SDF)/lib/libnetcdf.a
+
+
+#                  ---------------------
+#                  Standard ESMA Targets
+#                  ---------------------
+
+RN := $(shell basename $(PWD))
+NTHIS = GMAO_cfio
+NLIB  = lib$(NTHIS).a
+THIS = $(NTHIS)_$(RN)
+LIB  = lib$(THIS).a
+BINS  = 
+
+NREAL := $(FREAL)
+ifeq ($(RN),r4)
+      override FREAL = $(FREAL4)
+else
+      override FREAL = $(FREAL8)
+endif
+
+esma_install install: $(DEPS) $(LIB) $(BINS)
+	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAINC)/$(THIS) $(ESMABIN)
+	$(CP) -p *.a         $(ESMALIB)
+	$(CP) -p *.[Mm][Oo][Dd] $(ESMAINC)/$(THIS)
+ifeq ($(NREAL),$(FREAL))
+	$(RM) -r $(ESMALIB)/$(NLIB) $(ESMAINC)/$(NTHIS)
+	$(LN) -s $(ESMALIB)/$(LIB)  $(ESMALIB)/$(NLIB)
+	$(LN) -s $(ESMAINC)/$(THIS) $(ESMAINC)/$(NTHIS)
+endif
+#	$(CP) -p *.rc        $(ESMAETC)
+#	$(CP) -p $(BINS)     $(ESMABIN)
+
+esma_clean clean:
+	$(RM) *~ *.[aox] *.[Mm][Oo][Dd] *.x
+
+esma_distclean distclean:
+	$(RM) *~ *.[aoxd] *.[Mm][Oo][Dd] *.x
+
+esma_doc doc:
+	@echo "Target $@ not implemented yet in `pwd`"
+
+esma_help help:
+	@echo "Standard ESMA targets:"
+	@echo "% make esma_install    (builds and install under ESMADIR)"
+	@echo "% make esma_clean      (removes deliverables: *.[aox], etc)"
+	@echo "% make esma_distclean  (leaves in the same state as cvs co)"
+	@echo "% make esma_doc        (generates PDF, installs under ESMADIR)"
+	@echo "% make esma_help       (this message)"
+	@echo "Environment:"
+	@echo "      ESMADIR = $(ESMADIR)"
+	@echo "      BASEDIR = $(BASEDIR)"
+	@echo "         ARCH = $(ARCH)"
+	@echo "         SITE = $(SITE)"
+	@echo "        FREAL = $(FREAL)"
+
+#                  --------------------
+#                    NetCDF-3 Stubs?
+#                  --------------------
+
+ifeq ($(LIB_SDF),$(LIB_HDF))
+  ifeq ($(wildcard $(LIB_MFHDF3)), $(null))
+     STUBS := netcdf_stub.F90 # CFIO only needs NetCDF-2, so MFHDF is enough
+     $(warning Building CFIO with HDF but MFHDF3 not present --- providing stubs)
+  endif
+endif
+
+#                  --------------------
+#                  User Defined Targets
+#                  --------------------
+
+TESTS = testw_st.x testr_st.x testw_ex1.x testw_ex2.x \
+        testw_ex3.x testw_ex5.x testw_ex4.x testr_gd.x
+
+BENCH = benchmark_sdf.x benchmark_bin.x # benchmark_fwrite.x
+
+SRCS  = ESMF_CFIOMod.F90  ESMF_CFIOUtilMod.F90 ESMF_CFIOBaseMod.f \
+        ShaveMantissa.c $(STUBS)
+OBJS := $(addsuffix .o, $(basename $(SRCS)))
+DEPS := $(addsuffix .d, $(basename $(SRCS))) \
+        $(addsuffix .d, $(basename $(BINS))) 
+
+INC_DIRS = . .. $(INC_SDF)
+MOD_DIRS = . 
+
+BIG_ENDIAN =
+
+USER_FINCS  = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
+USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
+USER_FFLAGS = $(BIG_ENDIAN) 
+ 
+vpath % $(INC_DIRS) ../examples /usr/include # $(MOD_DIRS)
+
+$(LIB) lib : $(DEPS) $(OBJS)
+	$(RM) $(LIB)
+	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
+
+%.x : $(LIB) %.o
+	$(FC) $(LDFLAGS) -o $@ $*.o $(LIB) \
+              $(LIB_SDF) $(LIB_MPI) $(LIB_SYS)
+
+benchmark_fwrite.x : benchmark_fwrite.o
+	$(CC) $(LDFLAGS) -o benchmark_fwrite.x benchmark_fwrite.o $(LIB_SYS)
+
+test: $(TESTS)
+	  @ argv="$(TESTS)" ;\
+	  for test in $$argv; do			 \
+	    ( echo " "; echo "---- Starting $(RN) test $$test"; ./$$test ) \
+	  done
+
+benchmark: $(BENCH)
+	  @ $(RM) benchmark_out.*
+	  @ argv="$(BENCH)" ;\
+	  for test in $$argv; do			 \
+	    ( echo " "; echo "---- Starting $(RN) test $$test"; time ./$$test ) \
+	  done
+
+ut: utDownBit.x
+
+# Hack to prevent remaking dep files during cleaning
+# --------------------------------------------------
+  ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
+    -include $(DEPS)
+  endif
+
+#.

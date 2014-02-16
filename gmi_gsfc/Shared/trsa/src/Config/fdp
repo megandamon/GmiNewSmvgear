@@ -1,0 +1,184 @@
+#!/usr/bin/perl
+#
+# Simple script for automatic dependecy generation of (primarily) FORTRAN
+# and C programs. See usage() for more info.
+#
+# REVISION HISTORY:
+# 25feb2005  da Silva  First crack.
+# 17mar2006  da Silva  Now it should work with more than 1 module per file
+# 28nov2006  da Silva  Fixed Include regular expression.
+# 03mar2007  da Silva  Fixed major bug with .mod dependencies; also revised
+#                      the include refular expression rule and added elsif's
+#                      for efficiency
+#........................................................................
+
+use File::Basename;
+use Getopt::Std;         # command line options
+
+# Defaults and such
+# -----------------
+  init();
+
+# Main loop over file
+# -------------------
+%deps = ();
+$modfn = ' ';
+while (<>) {
+    ($keyword,$name) = split(' ', $_, 9999);
+    if (/^\#[ 	]*include/) {
+        $name =~ s/\"//g;
+        $name =~ s/\'//g;
+        $name =~ s/<//g;
+        $name =~ s/>//g;
+#	print $name;
+        $deps{$name}=1;
+    }
+    elsif (/^[ 	]*[Ii][Nn][Cc][Ll][Uu][Dd][Ee][ 	]\b*/) {
+        $name =~ s/\"//g;
+        $name =~ s/\'//g;
+#	print $name;
+        $deps{$name}=1;
+    }
+    elsif (/^[ 	]*[Uu][Ss][Ee][ 	]\b*/) {
+
+        $name =~ s/;//g;
+        $name =~ s/,.*//gi;
+        $name = fix_mod("$name");
+#	print $name;
+        $deps{$name}=1;
+    }
+    elsif (/^[ 	]*[Mm][Oo][Dd][Uu][Ll][Ee][ 	]\b*/) {
+       $uname = uc $name;
+       if ( "$uname" ne "PROCEDURE" ) {
+	 $ismodule++;
+	 $modfn = $modfn . fix_mod ( "$name" ) . ' ';
+       }
+       if ( $ismodule > 1 ) {
+           print STDERR "fdp: extra module $name found in $base$suffix\n";
+	 }
+     }
+
+}
+
+# Write results to STDOUT or to a files
+# -------------------------------------
+  if ( $opt_c ) {
+      open(FILE,">$base.d");
+      print STDERR "Building dependency file $base.d\n"  if ( $opt_v );
+  } else {
+       open(FILE,">&STDOUT");
+  }
+  print FILE "$base.d : $base$suffix\n";
+  print FILE "   $modfn: $base.o ; \@touch $modfn\n" if ( $ismodule );
+  print FILE "    $base.o : $base$suffix";
+  foreach $dep ( keys %deps ) { 
+      print FILE $dep unless ( $modfn =~ / $dep/ ); 
+  }
+  print FILE "\n";
+  close(FILE);
+
+exit(0);
+
+#.........................................................................
+
+sub init {
+
+$, = ' ';		# set output field separator
+$\ = " ";		# set output record separator
+
+# IMPORTANT: never change the line below as installation relies on it
+#            for creating appropiate defaults for each compiler.
+default: $default = "fdp.mod";  
+
+# Command line options
+# --------------------
+  getopts('vcp:o:i:');
+  usage() if ( $opt_h || $#ARGV < 0 );
+
+ $ncase = "lower";
+ $mcase = "lower";
+ $modname = $default unless ( $modname = $opt_p );
+ ($name,$path,$mod) = fileparse($modname,'\..*');
+ $ncase = "upper" if ( "$name" eq "FDP" ); 
+ $mcase = "upper" if ( "$mod"  eq ".MOD" ); 
+
+ $ifilen = $ARGV[0] unless ( $ifilen = $opt_i );
+($base,$path,$suffix) = fileparse($ifilen,'\..*');
+
+ $srcfn = "$base$suffix"; # source file name
+ $objfn = "$base.o";      # object file name
+ $depfn = "$base.d" unless ( $depfn = $opt_o ); # dependency file name
+
+ $ismodule = 0;
+
+}
+
+#.........................................................................
+
+sub fix_mod {
+    my $name = shift ;
+
+        $name = uc $name if ( "$ncase" eq "upper" );
+        $name = lc $name if ( "$ncase" eq "lower" );
+        $mod = MOD       if ( "$mcase" eq  "upper" );
+        $mod = mod       if ( "$mcase" eq  "lower" );
+        $name = "$name.$mod";
+
+        return $name;
+
+      }
+
+sub usage {
+
+   print <<"EOF";
+
+NAME
+     fdp - a simple depency generator for C or FORTRAN
+          
+SYNOPSIS
+
+     fdp OPTIONS  file_name
+          
+DESCRIPTION
+
+     Finds #include, include, and use kind of dependencies and prints them to
+     stdout. Use this script for automatic dependence generation within
+     the ESMA building mechanism. 
+
+OPTIONS
+     -c             Creates dependency file with extension .d instead of
+                    writing to stdout.
+
+     -i filename    Use filename for imput file when creating rules;
+                    this is useful when the file goes through /bin/cpp
+
+     -o filename    Specifies name of output depency file name, default
+                    is same as source file with .d extension.
+
+     -p case.case   Because f90 does not specify the case of the
+                    compiled module files, the user may need to specify
+                    it with the -p option. For example, the simple f90
+                    module
+                        module fdp
+                        end module fdp
+                    may compile to fdp.mod, FDP.mod, fdp.MOD or FDP.MOD. 
+                    You specify
+                       -p fdp.mod   for the compilers producing fdp.mod
+                       -p FDP.mod   for the compilers producing FDP.mod
+                        etc.
+                    The default is $default
+
+     -v             verbose mode
+
+BUGS
+     It does not yet handle nested include files.  It also assumes at
+     most one module per file.
+
+AUTHOR
+     Arlindo da Silva, NASA/GSFC.
+
+EOF
+
+  exit(1)
+
+ }

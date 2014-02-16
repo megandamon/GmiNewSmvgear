@@ -1,0 +1,690 @@
+\chapter[Input Resource File Variables]{Input Resource File Variables} 
+\label{chap:rcFile}
+
+A model run is controlled using a resource input file named
+{\em gmiResourceFile.rc}.
+The focus of this section is to describe the variables that constitute the 
+resouce file input.
+We provide the name of each variable, the default, and a brief description.
+
+
+{\small
+
+\begin{landscape}
+
+\begin{center}
+\begin{longtable}{|l|l|l|l|} \hline\hline
+{\bf Variable Name} & {\bf Type} & {\bf Default Value} & {\bf Description} \\ \hline\hline
+\multicolumn{4}{|c|}{\bf Control SECTION} \\ \hline\hline
+\multicolumn{4}{|l|}{\bf Processor distribution:} \\ \hline
+NX     & I  & 1          & Number of processors in the i direction (longitude). \\ \hline
+NX     & I  & 1          & Number of processors in the j direction (latitude). \\ \hline
+\multicolumn{4}{|l|}{\bf Global dimension info:} \\ \hline
+gmi\_nborder & I    &  4     & Number of longitude and latitude ghost zones.   \\ \hline
+%
+IM         & I    & 72      & Number of global longitudes (no ghost zones).   \\ \hline
+JM         & I    & 46      & Number of global "u\&v" latitudes (no ghost zones). \\ \hline
+LM         & I    & 29      & Number of global altitudes (no ghost zones).  \\ \hline
+%
+numSpecies    & I    &  1         & Number of species.  \\ \hline
+\multicolumn{4}{|l|}{\bf Time:} \\ \hline
+leapYearFlag     & I    &    0      & Leap year flag:  \\
+                 &      &           & $<0$: no year is a leap year  \\
+                 &      &           & $=0$: leap years are determined normally  \\
+                 &      &           & $>0$: every year is a leap year  \\ \hline
+%
+BEG\_YY  & I & 1989 & Beginning year  (YYYY) \\ \hline
+BEG\_MM  & I &    1 & Beginning month (MM)   \\ \hline
+BEG\_DD  & I &    1 & Beginning day   (DD)   \\ \hline
+BEG\_H   & I &    0 & Beginning hour         \\ \hline
+BEG\_M   & I &    0 & Beginning minute       \\ \hline
+BEG\_S   & I &    0 & Beginning second       \\ \hline
+%
+END\_YY  & I & 1989 & Ending year  (YYYY) \\ \hline
+END\_MM  & I &    1 & Ending month (MM)   \\ \hline
+END\_DD  & I &    1 & Ending day   (DD)   \\ \hline
+END\_H   & I &    0 & Ending hour         \\ \hline
+END\_M   & I &    0 & Ending minute       \\ \hline
+END\_S   & I &    0 & Ending second       \\ \hline
+%
+RUN\_DT  & R    &  180.0     &   Model time step      (s).  \\ \hline\hline
+%
+%
+\multicolumn{4}{|c|}{\bf MetFields SECTION} \\ \hline\hline
+\multicolumn{4}{|l|}{\bf Met data:} \\ \hline
+met\_opt        & I    &    3    & Met input option:  \\
+                &      &         & 1: use values fixed in code for u, v, ps, \ kel; no other data set  \\
+                &      &         & 2: read in a minimal set of met data: u, v, ps, \& kel; no other data set  \\
+                &      &         & 3:  read in a full set of met data.  \\ \hline
+met\_grid\_type & C    &  'A'    & Met grid type:  \\
+                &      &         & 'A':  use A grid (DAO, NCAR(CCM))  \\
+                &      &         & 'C':  use C grid (GISS)  \\ \hline
+mdt             & R    & 21600.0 & Time increment for reading new met data; must be a multiple of tdt (s).  \\ \hline
+do\_cycle\_met  & L    & F       & When the last met input file has been read, should the code cycle back \\
+                &      &         & and continue with the first file again?  \\ \hline
+do\_timinterp\_met & L &    T    & Should the met  fields, except the winds, be timeinterpolated?  \\ \hline
+do\_timinterp\_winds& L& T       & Should the wind fields be time interpolated? Note  \\
+                    &  &         & that pressure fields are always interpolated.  \\ \hline
+do\_wind\_pole      & L&    F    & When met\_opt = 1, should the transport be over  \\
+                    &  &         & the poles or around the equator?  \\ \hline
+met\_infile\_num    & I&   1     & Index of NetCDF file to start reading met input data from.  \\ \hline
+mrnum\_in           & I&  1      & NetCDF file record to start reading met data from.  \\ \hline
+tmet1               & R& 0.0     & Time tag of the mrnum\_in (s).  \\ \hline
+do\_read\_met\_list & L&    F    & Should the met file names be read in from met\_filnam\_list?  \\ \hline
+met\_filnam\_list  &C*80& 'met\_filnam\_list.in' & Name of file to get names of met input files from.  Note that currently \\
+                   &    &                        & this file must reside in the same directory that you are running the  \\
+                   &    &                        & gmi executable from.  \\ \hline
+met\_infile\_names() &C*128& ' '  & An array of met input file names (list may be used instead).  \\ \hline
+gwet\_opt      & I  &  0    & Option for choosing which gwet variable to read (for GEOS4) \\ 
+               &    &       & 0: Read gwet1 \\
+               &    &       & 1: Read gwettop \\ \hline\hline
+\multicolumn{4}{|c|}{\bf SpeciesConcentration SECTION} \\ \hline\hline
+\multicolumn{4}{|l|}{\bf Base species concentration units = mixing ratio} \\ \hline
+const\_opt          & I &    2    & Const input option:  \\
+                    &   &         & 1:  set const values to const\_init\_val   \\
+                    &   &         & 2:  read in const values  \\
+                    &   &         & 3:  solid body rotation  \\
+                    &   &         & 4:  dummy test pattern with linear slope in each   \\
+                    &   &         & \mbox{  } dimension  \\
+                    &   &         & 5:  exponential in vertical (decays with height)  \\
+                    &   &         & 6:  sin in latitude (largest at equator)  \\
+                    &   &         & 7:  linear vertical gradient  \\
+                    &   &         & 8:  sin in latitude (largest at equator) +  \\
+                    &   &         & \mbox{  } vertical gradient  \\ \hline
+mw()                & R &  0.0   & Array of species' molecular weights (g/mol).  \\ \hline
+const\_init\_val()  & R & 1.0d-30 & When const\_opt = 1, this array of values will be used to initialize each  \\
+                    &   &         & const species (note that if a negative const\_init\_val() marker is set in the  \\
+                    &   &         & resource file, all of the const\_init\_val's  from negative value on  \\ 
+                    &   &         & will be set to the value preceding the negative value).  \\ \hline
+const\_infile\_name &C*128& ' '    &Constituent input file name.  \\ \hline
+
+fixed\_const\_timpyr & I &   12 & Fixed const times per year:  \\
+                     &   &      & 1:  one    set  of emissions per year (yearly)  \\
+                     &   &      & 12:  twelve sets of emissions per year (monthly)  \\ \hline
+fixedConcentrationSpeciesNames & C* &   ''  & List of fixed species concentration names as long string.  \\ \hline
+fixed\_const\_infile\_name &C*128& ' '    & Fixed const input file name.  \\ \hline
+io3\_num            & I &    0    & Index of ozone constituent.  \\ \hline \hline
+%
+%
+\multicolumn{4}{|c|}{\bf Diagnostics SECTION} \\ \hline\hline
+problem\_name   & C*128& 'gmi\_test' & The name of the problem to be run.  \\ \hline
+do\_ftiming     & L    &  F         &  Do profiling timing?   \\ \hline
+\multicolumn{4}{|l|}{\bf ASCII output:} \\ \hline
+\multicolumn{4}{|l|}{\bf Terminal screen output:} \\ \hline
+pr\_diag     & L & F & Print some diagnostic output to screen?  \\ \hline
+pr\_time     & L & T & Should the time be printed to the terminal screen each time step \\
+             &   &   & (if false, will still get time output to the screen at the end of each day)?  \\ \hline
+\multicolumn{4}{|l|}{\bf Species/Mass ASCII file output:} \\ \hline
+pr\_ascii    & L &  T  & Should the ASCII output file be written at all?  \\ \hline
+  pr\_ascii1 & L &  T  & Should the first  section of the ASCII output  \\
+             &   &     & file be written (the mass data)?  \\ \hline
+  pr\_ascii2 & L &  F  & Should the second section of the ASCII output  \\
+             &   &     & file be written (the species concentration data)?  \\ \hline
+  pr\_ascii3 & L &  T  & Should the third section of the ASCII output file   \\
+             &   &     & be written (the species concentration min/maxs)?  \\ \hline
+  pr\_ascii4 & L &  F  & Should the fourth section of the ASCII output file  \\
+             &   &     & be written (total mass of each species)?  \\ \hline
+  pr\_ascii5 & L &  F  & Should the fifth  section of the ASCII output file be  \\
+             &   &     & written (total production and loss of each species)?  \\ \hline
+ascii\_out\_n & I &  1  & Single species index to use.  \\ \hline
+ascii\_out\_i & I &  1  & Longitude index to use in the second section.  \\ \hline
+pr\_ascii\_step\_interval & I & 1  & Interval for ASCII output:  \\
+                          &   &    & $>0$: ASCII output at specified step interval  \\
+                          &   &    & $=-1$: ASCII output at monthly intervals  \\ \hline
+\multicolumn{4}{|l|}{\bf SmvgearII file output:} \\ \hline
+pr\_smv2     & L &  F  & Should the SmvgearII output file be written (non-parallel mode only)?  \\ \hline
+%
+\multicolumn{4}{|l|}{\bf General NetCDF output: }  \\ \hline
+pr\_netcdf          & L & T & Should any of the periodic output files be written at all?  \\ \hline
+hdr\_var\_name  & C*32 &  'hdr'     &  NetCDF header    variable  name.  \\ \hline
+hdf\_dim\_name  & C*32 &'hdf\_dim'  & NetCDF header    dimension name.  \\ \hline
+lat\_dim\_name  & C*32 &'latitude\_dim'& NetCDF latitude  dimension name.  \\ \hline
+lon\_dim\_name  & C*32 &'longitude\_dim' & NetCDF longitude dimension name.  \\ \hline
+prs\_dim\_name  & C*32 &'pressure\_dim'  & NetCDF pressure  dimension name.  \\ \hline
+spc\_dim\_name  & C*32 &'species\_dim'   & NetCDF species   dimension name.  \\ \hline
+rec\_dim\_name  & C*32 &'rec\_dim'       & NetCDF record    dimension name.  \\ \hline
+tim\_dim\_name  & C*32 &'time\_dim'      & NetCDF time      dimension name.  \\ \hline
+pr\_level\_all  & L    & T          & Should output be done on all the vertical levels?   \\ 
+                &      &            & If pr\_level\_all=F, then set k1r\_gl and k2r\_gl  \\ \hline
+k1r\_gl         & I    &  1         & First altitude index for output (k1r\_gl $\ge$ k1\_gl).  \\ \hline
+k2r\_gl         & I    & 29         & Last  altitude index for output (k2r\_gl $\le$ k2\_gl).  \\ \hline
+do\_mean        & L & F & Should means or current values be put in the periodic output files?  \\ \hline
+\multicolumn{4}{|l|}{\tt Species Concentration file: }  \\ \hline
+pr\_const  & L & T & Should the periodic species concentrations output file be written?  \\ \hline
+outmain\_name   &C*80&'const'& file suffix name \\ \hline
+pr\_const\_all       & L & T & Should all of the species concentrations be   \\
+                     &   &   & written out?  \\ \hline
+pr\_psf    & L & F & Should the surface pressures be written out?  \\ \hline
+pr\_kel    & L & F & Should the temperatures be written out?  \\ \hline
+pr\_mass   & L & F & Should the mass be written out?  \\ \hline
+pr\_grid\_height & L & F & Should the grid box height be written out?  \\ \hline
+pr\_relHumidity & L & F & Should the rel humidity be written out?  \\ \hline
+pr\_metwater    & L & F & Should the meteorological water be written out?  \\ \hline
+pr\_surf\_emiss  & L & F & Should the surface emissions be written out   \\ \hline
+pr\_emiss\_3d     & L & F & Should 2d emissions be written out?  \\ \hline
+pr\_overheadO3col  & L & F & Should overhead ozone column be written out?  \\ \hline
+pr\_tropopausePress  & L & F & Should tropopause pressure be written out?  \\ \hline
+pr\_potentialVorticity  & L & F & Should potential vorticity be written out?  \\ \hline
+concentrationSpeciesNames & C* &  ''  & List of species names for species concentration diagnostic as a long string.  \\
+                          &   &      & Note that concentrationSpeciesNames is only used if pr\_const\_all is false.  \\
+                          &   &      & Note that concentrationSpeciesNames is also used to determine the \\
+                          &   &      & species written to dry\_depos and wet\_depos.  \\ \hline
+pr\_emiss\_all        & L & T & Should all the surface emissions be written to the  \\
+                      &   &   & periodic const output file? If set to F and  \\
+                      &   &   & pr\_surf\_emiss=T, then specify surfEmissionSpeciesNames.  \\ \hline
+surfEmissionSpeciesNames & C* &  ''  & List of species names for surface emission diagnostic as a long string.  \\ \hline
+pr\_dry\_depos   & L & F & Should the dry depositions be written out?  \\ \hline
+pr\_drydep\_all        & L & T & Should all the dry depositions be written to the periodic const output   \\
+                      &   &   & file? If set to F and pr\_dry\_depos=T, then specify dryDepSpeciesNames.  \\ \hline
+dryDepSpeciesNames & C* &  ''  & List of species names for dry\_dep diagnostic as a long string.  \\ \hline
+pr\_wet\_depos   & L & F & Should the wet depositions be written out?  \\ \hline
+pr\_wetdep\_all        & L & T & Should all the wet depositions be written to the  \\
+                      &   &   & periodic const output file? If set to F and  \\
+                      &   &   & pr\_wet\_depos=T, then specify wetDepSpeciesNames.  \\ \hline
+wetDepSpeciesNames & C* &  ''  & List of species names for wet\_dep diagnostic as a long string.  \\ \hline
+pr\_nc\_period\_days      & R &  1.0 & NetCDF output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+  do\_aerocom       & L & F & Should aerocom calculations be performed?  \\ \hline
+  do\_dust\_emiss   & L & F &   \\ \hline
+\multicolumn{4}{|l|}{\tt Qj file: }  \\ \hline
+pr\_qj            & L & F & Should the periodic qj output file be written?  \\ \hline
+pr\_qj\_o3\_o1d     & L & F & Should the special reaction O3$\rightarrow$O1D  be saved with the qj's?  \\ \hline
+pr\_qj\_opt\_depth  & L & F & Should the optical depth be saved with the qj's?  \\ \hline
+qj\_var\_name       & C*32& 'qj' &  netCDF qj variable name\\ \hline
+qj\_dim\_name       & C*32& 'qj\_dim' &  netCDF qj dimension name\\ \hline
+pr\_qj\_period\_days & R &   & qj output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\bf Qk file: }  \\ \hline
+pr\_qk            & L & F & Should the periodic qk   output file be written?  \\ \hline
+qk\_var\_name       & C*32& 'qk' &  netCDF qk variable name\\ \hline
+qk\_dim\_name       & C*32& 'qk\_dim' &  netCDF qk dimension name\\ \hline
+pr\_qk\_period\_days & R &   & qk output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\tt Qqjk file: }  \\ \hline
+pr\_qqjk       & L & F & Should the periodic qqjk output file be written?  \\ \hline
+do\_qqjk\_inchem & L & F & If pr\_qqjk is on, should qqj's \& qqk's be determined inside \\
+                     &   &   & or outsid the Chemistrye?  \\ \hline
+qqj\_var\_name       & C*32& 'qqj' &  netCDF qqj variable name\\ \hline
+qqj\_dim\_name       & C*32& 'qqj\_dim' &  netCDF qqj dimension name\\ \hline
+qqk\_var\_name       & C*32& 'qqk' & \\  netCDF qqk variable name \\ \hline
+qqk\_dim\_name       & C*32& 'qqk\_dim' &  netCDF qqk dimension name\\ \hline
+pr\_qqjk\_period\_days & R &   & qqjk output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\tt SAD file:}  \\ \hline
+pr\_sad           & L & F & Should the periodic sad  output file be written?  \\ \hline
+sad\_var\_name       & C*32& 'sad' &  netCDF sad variable name\\ \hline
+sad\_dim\_name       & C*32& 'sad\_dim' &  netCDF sad dimension name \\ \hline
+pr\_sad\_period\_days & R &   & sad output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\bf Georgia Tech Cloud file: }  \\ \hline
+  pr\_cloud         & L & F & Should cloud related variables be written (for GT module)?  \\ \hline
+pr\_cloud\_period\_days & R &   & cloud output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\bf Tendencies file: }  \\ \hline
+pr\_tend          & L & F & Should the periodic tendency diagnostics output  file be written?  \\ \hline
+pr\_tend\_all        & L & T & Should periodic tendency diagnostics output file  \\
+                      &   &   & be written for all the species? If set to  F and  \\
+                      &   &   & pr\_tend=T, then specify tendSpeciesNames.  \\ \hline
+tendSpeciesNames & C* &  ''  & List of species names for tendencies diagnostic as a long string.  \\ \hline
+\multicolumn{4}{|l|}{\tt Aerosol/Dust file:} \\ \hline
+pr\_AerDust       & L & F & Should the periodic aerosol/dust diagnostics be written?  \\ \hline
+AerDust\_var\_name &C*32& ' '    & netCDF aerosol/dust variable name  \\ \hline
+pr\_aerdust\_period\_days & R &   & aerdust output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+outaerdust\_name   &C*80&'aerdust'& file suffix name \\ \hline
+\multicolumn{4}{|l|}{\tt Flux Diagnostics:} \\ \hline
+pr\_flux          & L & F & Should the periodic flux diagnostics file be written?  \\ \hline
+fluxSpeciesNames(1:n)   & C*16 &   ''  & List of species names used for flux diagnostics.   \\ \hline
+pr\_const\_flux   & L & T & Should the periodic species concentrations output file be written?  \\ \hline
+ pr\_psf\_flux    & L & F & Should the surface pressure be written outin the flux file?  \\ \hline
+flux\_name     &C*8& 'mf' & NetCDF flux variable name.  \\ \hline
+pr\_flux\_period\_days      & R &  1.0 & flux output period:  \\
+                          &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+                          &   &      & $-1.0$:  periodic output at monthly intervals  \\
+                          &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\tt Overpass Output ($\#$ is 1, or 2):} \\ \hline
+  pr\_overpass$\#$   & L & F & Should the periodic overpass$\#$ output file be written?  \\ \hline
+  overpass$\#$SpeciesNames  & C* & ''  & List species names for overpass$\#$ diagnostics as a long string. \\ \hline
+  pr\_const\_overpass$\#$   & L & F & Should the periodic species conc. be written for user defined species?  \\ \hline
+  pr\_psf\_overpass$\#$   & L & F & Should surface pressure be written out?  \\ \hline
+  pr\_kel\_overpass$\#$   & L & F & Should temperature be written out?  \\ \hline
+  pr\_qj\_overpass$\#$   & L & F & Should photolysis rates be written out?  \\ \hline
+  pr\_qqjk\_overpass$\#$   & L & F & Should photolysis rate constants be written out?  \\ \hline
+  pr\_metwater\_overpass$\#$   & L & F & Should metwater be written out?  \\ \hline
+  pr\_totalMass\_overpass$\#$   & L & F & Should mass be written out?  \\ \hline
+  pr\_relHumidity\_overpass$\#$   & L & F & Should relative humidity be written out?  \\ \hline
+  pr\_gridBoxHeight\_overpass$\#$   & L & F & Should grid box height be written out?  \\ \hline
+  pr\_cloudOptDepth\_overpass$\#$   & L & F & Should cloud optical depth be written out?  \\ \hline
+  pr\_tropopausePress\_overpass$\#$  & L & F & Should tropopause pressure be written out?  \\ \hline
+  pr\_overheadO3col\_overpass$\#$   & L & F & Should overhead ozone column be written out?  \\ \hline
+  begTime\_overpass$\#$ & R & 11.0 & Beginning time for overpass$\#$ \\ \hline
+  endTime\_overpass$\#$ & R & 13.0 & Ending time for overpass$\#$ \\ \hline
+  pr\_overpass$\#$\_period\_days   & R & 1.0 & overpass netCDF output period:  \\
+               &   &      & $>0.0$:  periodic output at specified interval (days)  \\
+               &   &      & $-1.0$:  periodic output at monthly intervals  \\
+               &   &      & $-2.0$:  periodic output on 1st \& 15th of each month  \\ \hline
+\multicolumn{4}{|l|}{\tt Frequency Output ($\#$ is 1, 2, 3, or 4):} \\ \hline
+  pr\_const\_column\_freq$\#$   & L & F & Should the periodic species conc. column file be written?  \\ \hline
+  pr\_const\_surface\_freq$\#$   & L & F & Should the periodic surf. species conc. file be written?  \\ \hline
+  k1\_freq$\#$   & I & k1 & Minimum level for freq$\#$ output variables.  \\ \hline
+  k2\_freq$\#$   & I & k2 & Maximum level for freq$\#$ output variables.  \\ \hline
+  do\_mean\_freq$\#$   & L & F &   \\ \hline
+  do\_day1\_freq$\#$   & L & F &   \\ \hline
+  pr\_freq$\#$   & L & F & Should the periodic output file at Frequency $\#$ be written?  \\ \hline
+  pr\_const\_freq$\#$   & L & F & Should the periodic species conc. be written for user defined species?  \\ \hline
+  pr\_psf\_freq$\#$   & L & F & Should surface pressure be written out?  \\ \hline
+  pr\_kel\_freq$\#$   & L & F & Should temperature be written out?  \\ \hline
+  pr\_mass\_freq$\#$   & L & F & Should mass be written out?  \\ \hline
+  pr\_rel\_hum\_freq$\#$   & L & F & Should relative humidity be written out?  \\ \hline
+  pr\_grid\_height\_freq$\#$   & L & F & Should grid box height be written out?  \\ \hline
+  pr\_overheadO3col\_freq$\#$   & L & F & Should overhead ozone column be written out?  \\ \hline
+  pr\_potentialVorticity\_freq$\#$   & L & F & Should potential vorticity be written out?  \\ \hline
+  pr\_tropopausePress\_freq$\#$   & L & F & Should tropopause pressure pressure be written out?  \\ \hline
+  pr\_nc\_freq$\#$   & R & 1.0 &   \\ \hline
+  lonRange\_freq$\#$(1:2)   & R & 0.d0, 360.d0 & Selected longitude range for outputs  \\ \hline
+  latRange\_freq$\#$(1:2)   & R & -90.d0, 900.d0 & Selected latitude range for outputs  \\ \hline
+  freq$\#$SpeciesNames & C* & ''  & List species names for freq$\#$ diagnostics as a long string. \\ \hline
+  freq$\#$\_name   & C*80 & ' ' &   \\ \hline
+  freq$\#$\_description   & C*80 & ' ' & Description to be included in the header of the nc file.  \\ \hline
+\multicolumn{4}{|l|}{\bf Column diagnostic NetCDF output:} \\ \hline
+stationsInputFileName & C*128 &  ''   & File having a list of all possible stations (with their locations) \\
+                      &       &       & for column disgnostics.  \\ \hline
+col\_diag\_period        & R & 3600.0 & Column diagnostics output period (s).  \\ \hline
+colDiagStationsNames  &C*& ' '   & List of selected stations (as a long string) for column diag.  \\ \hline
+colDiagSpeciesNames & C* & '' &  List of species names for column diagnostics as a long string. \\ \hline
+col\_diag\_pres(1:10)    & R & 1000.0, ... , 100.0  & Pressure levels for column diag. (mb).  \\ \hline\hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Restart SECTION} \\ \hline\hline
+pr\_restart          & L &  F  & Should a restart file be written?  \\ \hline
+do\_overwrt\_rst       & L &  T  & Should the restart file be over-written?  \\ \hline
+pr\_rst\_period\_days  & R & 7.0 & Restart output period:  \\
+                       &   &     & $>0.0$:  restart output at specified interval (days)  \\
+                       &   &     & $-1.0$:  restart output at monthly intervals  \\
+                       &   &     & $-2.0$:  restart output on 1st \& 15th of each month  \\ \hline
+rd\_restart            & L &  F  & Should a restart file be read?  \\ \hline
+restart\_infile\_name  &C*128& 'gmi.rst.nc' & Name of restart input file; note that currently this file must reside  in the \\
+                       &    &              & same directory that you are running the gmi executable from.  \\ \hline
+restart\_inrec         & I  & last record  & Record number in restart (rst) input   file to read from.  \\ 
+                       &    & \# in rst file         &   \\ \hline \hline
+\multicolumn{4}{|c|}{\bf Advection SECTION} \\ \hline\hline
+trans\_opt      & I    &    1       & Transport option:  \\
+                &      &            & 1: do LLNLTRANS transport  \\ \hline
+advec\_opt           & I & 1 & Advection option:  \\
+                     &   &   &       0:  no advection  \\
+                     &   &   &       1:  do DAO2 advection  \\ \hline
+press\_fix\_opt      & I & 1 & Pressure fixer option:  \\
+                     &   &   &       0:  no   pressure fixer used  \\
+                     &   &   &       1:  LLNL pressure fixer used (Cameron-Smith)  \\
+                     &   &   &       2:  UCI  pressure fixer used (Prather)  \\ \hline
+pmet2\_opt           & I & 1 & pmet2 option:  \\
+                     &   &   &       0:  use pmet2  \\
+                     &   &   &       1:  use (pmet2 - "global mean change in surface pressure")  \\ \hline
+advec\_consrv\_opt   & I & 2 & Advection conserve option:  \\
+                     &   &   &       0:  conserve tracer conc.;             use pmet2  \\
+                     &   &   &       1:  conserve tracer mass;              use pmet2  \\
+                     &   &   &       2:  conserve both tracer conc. \& mass; use pctm2  \\
+                     &   &   & \mbox{  } Note that if press\_fix\_opt = 0 \& advec\_consrv\_opt = 2, the code will   \\
+                     &   &   & \mbox{  } generate an error and exit.   \\ \hline
+advec\_flag\_default & I & 1 & Set all species to do advection or not to  do advection as the default; \\
+                     &   &   & can then use advec\_flag turn individual species either off,    \\
+                     &   &   & if the default is on; or on, if the default is off:   \\
+                     &   &   &      0:  do not advect any species as default   \\
+                     &   &   &      1:  advect all species        as default  \\ \hline
+advectedSpeciesNames & C*& '' & List of advected species names as a long string. \\
+                     &   &    & Set advec\_flag\_default = 1 to use this variable. \\ \hline
+j1p                  & I & 3  & Determines size of the Polar cap; j2p = j2\_gl - j1p + 1  \\ \hline
+do\_grav\_set        & L & F & Should gravitational settling of aerosols be done?  \\ \hline
+do\_var\_adv\_tstp   & L & F & Should variable advection time steps be taken as  \\
+                     &   &   & determined by the Courant condition?  \\ \hline \hline
+%
+%
+\multicolumn{4}{|c|}{\bf Convection SECTION} \\ \hline \hline
+\multicolumn{4}{|l|}{\bf Base convection units = kg/m$^2$*s} \\ \hline
+convec\_opt      & I & 0 & Convection option:   \\
+                 &   &   &         0:  no convection   \\
+                 &   &   &         1:  do DAO2 convection   \\
+                 &   &   &         2:  do NCAR convection  \\ \hline\hline
+%
+%
+\multicolumn{4}{|c|}{\bf Deposition SECTION} \\ \hline\hline
+\multicolumn{4}{|l|}{\bf Base deposition units = m/s} \\ \hline
+do\_drydep       & L &  F  & Should dry deposition be done?  \\ \hline
+do\_wetdep       & L &  F  & Should wet deposition be done?  \\ \hline
+do\_simpledep    & L &  F  & Should simple deposition be done?  \\ \hline
+num\_ks\_sdep    & I & 1   & Number of vertical layers to apply 2 day loss   \\
+                 &   &     & factor to in simple deposition.  \\ \hline
+wetdep\_eff()    & R & 0.0 & Wet deposition (scavenging) efficiencies; should be set to values  \\
+                 &   &     & between 0.0 and 1.0 for each species.  \\ \hline\hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Diffusion SECTION} \\ \hline\hline
+diffu\_opt       & I & 0 & Diffusion option:  \\
+                 &   &   &         0:  no diffusion  \\
+                 &   &   &         1:  do DAO2 vertical diffusion  \\ \hline
+vert\_diffu\_coef & R & 0.0 & Scalar vertical diffusion coefficient (m$^2$/s).  \\ \hline\hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Emission SECTION} \\ \hline\hline
+\multicolumn{4}{|l|}{\bf Base emissions units = kg/s} \\ \hline
+emiss\_opt       & I & 0 & Emissions option:  \\
+                 &   &   &          0:  no emissions  \\
+                 &   &   &          1:  do LLNL emissions only  \\
+                 &   &   &          2:  do LLNL + Harvard emissions  \\ \hline
+emiss\_in\_opt    & I & 0 & Emissions input option:  \\
+                  &   &   &         0:  no emissions data  \\
+                  &   &   &         1:  set all emiss values to emiss\_init\_val  \\
+                  &   &   &         2:  read in emiss values  \\ \hline
+emiss\_conv\_flag & I & 0 & Emissions conversion flag:  \\
+                  &   &   &         0:  no conversion performed  \\
+                  &   &   &         1:  use scalar emiss\_conv\_fac (scalar * kg/s $=>$ kg/s)  \\
+                  &   &   &         2:  use calculated emissions conversion factor (kg/km$^2$*hr $=>$ kg/s)  \\ \hline
+semiss\_inchem\_flag
+                & I & -1  & Surface emissions inside chemistry flag:  \\
+                &   &   &   $<0$:  If emissions are on, surface emissions will be done in Smvgear \\
+                  &   &   & \mbox{      } chemistry if it is on; outside of chemistry if Smvgear chemistry is off.  \\
+                &   &   &   $=0$:  If emissions are on, surface emissions will be done outside \\ 
+                &   &   &  \mbox{      } of chemistry.  \\
+                &   &   &   $>0$:  If emissions are on, surface emissions will be done in Smvgear \\ 
+                &   &   &  \mbox{      } chemistry.  \\ \hline
+emiss\_timpyr    & I & 1 & Emission times per year:  \\
+                 &   &   &          1:  one    set  of emissions per year (yearly)  \\
+                &   &   &          12:  twelve sets of emissions per year (monthly)  \\ \hline
+emissionSpeciesNames & C* & '' & Ordered list of names of species (as a long string) to be read in from \\
+                     &    &    & the emission file. If a species appears in the file but is but is  \\
+                 &   &   & not read in, it should be labeled 'xxx'.  \\ \hline
+emiss\_conv\_fac  & R & 1.0 & Emission conversion factor when emiss\_conv\_flag = 1.  \\ \hline
+emiss\_init\_val  & R & 1.0 & When emiss\_opt = 1, this value will be used to initialize all  \\
+                  &   &     &  emissions values.  \\ \hline
+emiss\_infile\_name     & C*128 & ' '     & Emissions input file name.  \\ \hline
+emiss\_var\_name        & C*32 & 'emiss' & NetCDF emission variable name.  \\ \hline
+doReadDailyEmiss  & L & F & Should we read the daily emission file? \\ \hline
+begDailyEmissRec  & I & 1 & beginning record for daily emission reading \\ \hline
+endDailyEmissRec  & I & 1 & ending    record for daily emission reading \\ \hline
+\multicolumn{4}{|l|}{\bf Harvard biogenic \& soil emissions:} \\ \hline
+isop\_scale()  & R & 1.0d0 & Isoprene scaling factors for each month.  \\ \hline
+\multicolumn{4}{|l|}{Note that if ((emiss\_opt == 2) \&\& do\_full\_chem), the } \\
+\multicolumn{4}{|l|}{indices below will be automatically set by the setkin files.} \\ \hline
+iacetone\_num          & I & 0 & Const array index for acetone  (C3H6O) (ACET).  \\ \hline
+ico\_num               & I & 0 & Const array index for CO.  \\ \hline
+iisoprene\_num         & I & 0 & Const array index for isoprene (C5H8)  (ISOP).  \\ \hline
+ipropene\_num          & I & 0 & Const array index for propene  (C3H6)  (PRPE).  \\ \hline
+ino\_num               & I & 0 & Const array index for NO.  \\ \hline
+fertscal\_infile\_name  & C*128 & '' & Fertilizer scale infile name.  \\ \hline
+lai\_infile\_name       & C*32 & ''       & Leaf area index  infile name.  \\ \hline
+light\_infile\_name     & C*128 & ''        & Light            infile name.  \\ \hline
+precip\_infile\_name    & C*128 & ''    & Precipitation    infile name.  \\ \hline
+soil\_infile\_name      & C*128 & ''          & Soil type        infile name.  \\ \hline
+veg\_infile\_name       & C*128 & ''   & Vegetation type  infile name.  \\ \hline
+isopconv\_infile\_name  & C*128 & ''     & Isoprene conversion    infile name.  \\ \hline
+monotconv\_infile\_name & C*128 & ''    & Monoterpene conversion infile name.  \\ \hline
+\multicolumn{4}{|l|}{\bf MEGAN Emissions:} \\ \hline
+doMEGANemission   & L & F & Should we do MEGAN emissions? \\ \hline
+laiMEGAN\_InfileName & C*128 & ' '&  AVHRR leaf-area-indices infile name. \\ \hline
+aefMboMEGAN\_InfileName & C*128 & ' '&  Annual emission factor for methyl butenol infile name. \\ \hline
+aefIsopMEGAN\_InfileName & C*128 &' ' & Annual emission factor for isoprene infile name. \\ \hline
+aefMonotMEGAN\_InfileName & C*128 &' ' & Annual emission factor for monoterpenes infile name. \\ \hline
+aefOvocMEGAN\_InfileName & C*128 &' ' & Annual emission factor for other biogenic VOCs infile name. \\ \hline
+\multicolumn{4}{|l|}{\bf Ship Emission:} \\ \hline
+do\_ShipEmission    & L & F & Should we do ship emission calculation?  \\ \hline
+\multicolumn{4}{|l|}{\bf Galactic Cosmic Ray:} \\ \hline
+do\_gcr    & L & F & Should Galactic Cosmic Ray source of N and NO be turned on?  \\ \hline
+gcr\_infile\_name  & C*128 & ' ' & Input file for Galactic Cosmic Ray source parameters  \\ \hline
+\multicolumn{4}{|l|}{\bf Emission Scaling Factors:} \\ \hline
+doScaleNOffEmiss & L & F & Should we use fossil fuel scaling factors? \\ \hline
+scFactorNOff\_infile\_name & C*128 & ' ' & Scaling factor for NO fossil fuel emission infile name. \\ \hline
+doScaleNObbEmiss & L & F & Should we use biomass burning scaling factors? \\ \hline
+scFactorNObb\_infile\_name & C*128 & ' ' & Scaling factor for biomass burning emission infile name. \\ \hline
+\multicolumn{4}{|l|}{\bf Michigan aerosol and dust emissions:} \\ \hline
+emiss\_aero\_opt         & I & 0 & aerosol emission option \\
+                         &   &   & 0: no aerosol emission    \\
+                         &   &   & 1: Michigan aerosol emissions  \\
+                         &   &   & 2: GOCART aerosol emissions \\ \hline
+naero                  & I & 0 & number of aerosol emissions.  \\ \hline
+emissionAeroSpeciesNames & C* & '' & Ordered list of names of aerosol species (as a long string) to be read in \\
+                              &      &    & from the aerosol emission file.  \\
+emiss\_aero\_infile\_name & C*128 & ' ' & Name of file containing michigan aerosol emissions.  \\ \hline
+emiss\_dust\_opt         & I & 0 & 0,1; 0 fo no michigan dust emissions.  \\ \hline
+emiss\_dust\_opt         & I & 0 & dust emission option \\
+                         &   &   & 0: no dust emission    \\
+                         &   &   & 1: Michigan dust emissions  \\
+                         &   &   & 2: GOCART dust emissions \\ \hline
+ndust                  & I & 0 & number of dust emissions.  \\ \hline
+nst\_dust               & I & 1 & number of starting point in time for michigan  dust emissions.  \\ \hline
+nt\_dust                & I & 1 & number of times of dust emissions per michigan dust emissions file.  \\ \hline
+emissionDustSpeciesNames & C* & '' & Ordered list of names of dust species (as a long string) to be read in \\
+                              &      &    & from the dust emission file.  \\
+emiss\_dust\_infile\_name & C*128 & ' ' & Name of file containing michigan dust emissions. \\ \hline
+GOCARTerod\_infile\_name  & C*128 & ''  &  \\ \hline
+GOCARTocean\_infile\_name  & C*128 & ''  &  \\ \hline
+GOCARTerod\_mod\_infile\_name  & C*128 & ''  &  \\ \hline\hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Chemistry SECTION} \\ \hline\hline
+chem\_opt        & I & 0 & Chemistry option:  \\
+                 &   &   & 0:  no chemistry (age of air, etc.)  \\
+                 &   &   & 1:  call Radon/Lead chemistry  \\
+                 &   &   & 2:  call SmvgearII  \\
+                 &   &   & 3:  call simple loss (N2O, etc.)  \\
+                 &   &   & 4:  call forcing boundary condition for a tracer (CO2, etc.)  \\
+                 &   &   & 5:  call Synoz tracer (if num\_species=1 then just Synoz,  \\
+                 &   &   & \mbox{  }     if num\_species=2 then Nodoz tracer is species number 2)  \\
+                 &   &   & 6:  call Beryllium chemistry  \\
+                 &   &   & 7:  call Quadchem  \\
+                 &   &   & 8:  call Sulfur chemistry  \\ \hline
+cloudDroplet     & I & 1 & cloud droplet option:  \\
+                 &   &   & 1:  Boucher and LohMan    Correlation \\
+                 &   &   & 2:  Nenes and Seinfeld    Parameterization  \\
+                 &   &   & 3:  Abdul-Razzak and Ghan Parameterization  \\
+                 &   &   & 4:  Segal amd Khain       Correllation \\ \hline
+chem\_cycle      & R & 1.0 & Number of time steps to cycle chemistry calls on:  \\
+                 &   &   &  $<1.0$:  chemistry will subcycle  \\
+                 &   &   &  $=1.0$:  chemistry called each time step  \\ \hline
+chem\_mask\_klo   & I & k1\_gl & Lowest  grid level at which chemistry is calculated.  \\ \hline
+chem\_mask\_khi   & I & k2\_gl & Highest grid level at which chemistry is calculated.  \\ \hline
+const\_var\_name    &C*32& 'const'& NetCDF constituent variable name.  \\ \hline
+const\_labels()     &C*16& '                ' & Constituent string labels.  \\ \hline
+loss\_opt       & I    &  0         &  Stratospheric loss option   \\ 
+                &      &            &  0: do not use stratospheric loss   \\ 
+                &      &            &  1: use stratospheric loss in gmi\_step.F  \\ \hline
+oz\_eq\_synoz\_opt & I    &  0      &  conversion of syzoz to ozone option   \\ 
+                &      &            &  0: no conversion   \\ 
+                &      &            &  1: do conversion  \\ \hline
+synoz\_threshold & R &  Huge  & Chemistry turned off where synoz $>$ this  \\
+                 & & & threshold (mixing ratio).  \\ \hline
+t\_cloud\_ice     & R & 263.0 & Temperature for cloud ice formation.  \\ \hline
+do\_chem\_grp     & L & F & Should chemical groups be used?  \\ \hline
+do\_smv\_reord    & L & F & Should the grid boxes be reordered in order of stiffness?  \\ \hline
+do\_wetchem      & L & F & Should wet chemistry be done?  \\ \hline
+\multicolumn{4}{|l|}{\bf Aerosol/Dust Calculations} \\ 
+\multicolumn{4}{|l|}{For trop and combo without interactive aerosols and chemistry} \\ \hline
+AerDust\_infile\_name &C*128& ' ' & aerosol/dust input file name  \\ \hline
+do\_AerDust\_Calc    & L &    F    & Should you do aerosol/dust calculations?  \\ \hline\hline
+AerDust\_Effect\_opt & I &    0    & Radiative effects or/and heteregeneous chemistry  \\ 
+ &  &        & 0: rad. effects on  and het. chem. on  \\ 
+ &  &        & 1: rad. effects off and het. chem. on  \\ 
+ &  &        & 2: rad. effects on  and het. chem. off  \\ 
+ &  &        & 3: rad. effects off and het. chem. off  \\ \hline
+\multicolumn{4}{|l|}{\bf Be-7/Be-10 chemistry: } \\ \hline
+be\_opt        & I &    1    & Beryllium star table option:  \\
+                 &   &   & 1:  use Koch  table  for Be-7 and Be-10  \\
+                 &   &   & 2:  use Nagai tables for Be-7 and Be-10  \\ \hline
+t\_half\_be7    & R & 53.3d0  & Half life    of  Beryllium-7,  or other cosmogenic radionuclide (days).  \\ \hline
+t\_half\_be10   & R &  5.84d8 & Half life    of  Beryllium-10, or other cosmogenic   radionuclide (days).  \\ \hline
+yield\_be7     & R &  4.5d-7 & Yield factor for Beryllium-7,  or other cosmogenic radionuclide (unitless).  \\ \hline
+yield\_be10    & R &  2.5d-7 & Yield factor for Beryllium-10, or other cosmogenic radionuclide (unitless).  \\ \hline
+\multicolumn{4}{|l|}{\bf Base forcing boundary condition units = mixing ratio} \\ \hline
+forc\_bc\_opt         & I & 1 & Forcing boundary condition option:  \\
+                 &   &   &                              1:  set all   forc\_bc values to forc\_bc\_init\_val  \\
+                 &   &   &                              2:  read in   forc\_bc  \\
+                 &   &   &                              3:  calculate forc\_bc  \\ \hline
+fbc\_j1           & I & ju1\_gl & Forcing boundary condition j1 (low  latitude).  \\ \hline
+fbc\_j2           & I &  j2\_gl & Forcing boundary condition j2 (high latitude).  \\ \hline
+forc\_bc\_years       & I & 1 & Number of years of forcing data.  \\ \hline
+forc\_bc\_start\_num   & I & 1 & Forcing boundary condition start number; index for year to use.  \\ \hline
+forc\_bc\_kmin        & I & 1 & Minumum k level for forcing boundary condition.  \\ \hline
+forc\_bc\_kmax        & I & 1 & Maximum k level for forcing boundary condition.  \\ \hline
+forcedBcSpeciesNames & C* & '' & Ordered list of species names (as a long string) used for forcing \\
+                     &    &    & boundary condition. \\ \hline
+forc\_bc\_init\_val   & R & 0.0 & When forc\_bc\_opt = 1, this value will be used to  \\
+                      &   &     &  initialize all forc\_bc values (ppmv).  \\ \hline
+forc\_bc\_incrpyr     & R & 0.3 & Forcing boundary condition emission increase  per year.  \\ \hline
+forc\_bc\_lz\_val      & R & 0.0 & Value to which lower zones are forced.  \\ \hline
+forc\_bc\_infile\_name & C*128 & 'forc\_bc\_co2.asc' & Forcing boundary condition input file name.  \\ \hline
+\multicolumn{4}{|l|}{\bf Base simple loss units = s$^{-1}$} \\ \hline
+loss\_freq\_opt   & I & 1 & Loss frequency option:  \\
+                 &   &   &                            1:  set all loss\_freq values to loss\_init\_val  \\
+                 &   &   &                            2:  read in loss data  \\
+                 &   &   &                            3:  use NCAR loss  \\ \hline
+kmin\_loss       & I & k1\_gl & Minimum vertical index at which loss will occur; currently, below  \\
+                 &   &   &      this altitude a constant boundary condition is enforced using  \\
+                 &   &   &      const\_init\_val for all species.  \\ \hline
+kmax\_loss       & I & k2\_gl & Maximum vertical index at which loss will occur.  \\ \hline
+loss\_init\_val   & R &  0.0  & When loss\_freq\_opt = 1, this value will be used to  \\ 
+                  &   &       & initialize all loss\_freq values.  \\ \hline
+loss\_data\_infile\_name   & C*128 & 'loss\_n2o.asc' & Loss data input file name.  \\ \hline
+\multicolumn{4}{|l|}{\bf Surface Area Density (SAD):} \\ \hline
+sad\_opt             & I & 0 & Surface area density (SAD) option:  \\
+                 &   &   &                              0:  do not allocate or process SAD array  \\
+                 &   &   &                              1:  allocate, but zero out SAD array  \\
+                 &   &   &                              2:  call Considine code (i.e., Condense)  \\
+                 &   &   &                              3:  read SAD array from a file of monthly averages  \\ \hline
+h2oclim\_opt         & I & 2 & Water climatology input option:  \\
+                 &   &   &                              1:  set all h2oclim values to h2oclim\_init\_val  \\
+                 &   &   &                              2:  read in h2oclim  \\ \hline 
+h2oclim\_timpyr      & I & 12 & Water climatology times per year  \\
+                 &   &   &                              1:  yearly  \\
+                 &   &   &                             12:  monthly  \\ \hline
+ch4clim\_init\_val    & R & 0.0 & When h2oclim\_opt = 1, this value will be used to initialize all ch4clim  \\ \hline
+h2oclim\_init\_val    & R & 0.0 & When h2oclim\_opt = 1, this value will be used to initialize all h2oclim  \\
+                      &   &     & values.  \\ \hline
+h2oclim\_infile\_name & C*128 & ' ' & Water climatology input file name.  \\ \hline
+lbssad\_opt          & I & 2 & Liquid binary sulfate input option:  \\
+                 &   &   &                              1:  set all lbssad values to lbssad\_init\_val  \\
+                 &   &   &                              2:  read in lbssad  \\ \hline
+lbssad\_timpyr       & I & 12 & Liquid binary sulfate times per year:  \\
+                 &   &   &                              1:  yearly  \\
+                 &   &   &                             12:  monthly  \\ \hline
+lbssad\_init\_val     & R & 0.0 & When lbssad\_opt = 1, this value will be used   \\
+                      &   &     & to initialize all lbssad values.  \\ \hline
+lbssad\_infile\_name  & C*128 & ' ' & Liquid binary sulfate input file name.  \\ \hline
+\multicolumn{4}{|l|}{\bf Reaction rate adjustment: } \\ \hline
+do\_rxnr\_adjust           & L    & F                & Adjust reaction rates?  \\ \hline
+rxnr\_adjust\_infile\_name & C*128 & ' '              & Reaction rate adjustment input file name.  \\ \hline
+rxnr\_adjust\_var\_name    & C*32 & 'reac\_rate\_adj'& NetCDF reaction rate adjustment variable name.  \\ \hline\hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Photolysis SECTION} \\ \hline\hline
+\multicolumn{4}{|l|}{\bf Base photolysis/qj units = s$^{-1}$}  \\ \hline
+phot\_opt             & I & 1 & Photolysis option:  \\
+                 &   &   &                               0:  no photolysis  \\
+                 &   &   &                               1:  set all qj values to qj\_init\_val  \\
+                 &   &   &                               2:  read in qj values  \\
+                 &   &   &                               3:  use a version of fastj (to be used with fastj\_opt)  \\
+                 &   &   &                               4:  lookup table for qj (Kawa style)  \\
+                 &   &   &                               5:  lookup table for qj (Kawa style) + use  \\
+                 &   &   & \mbox{  } ozone climatology for column ozone calc.  \\
+                 &   &   &                               6:  calculate from table and GMI data  \\
+                 &   &   & \mbox{  } (Quadchem) \\
+                 &   &   &                               7:  read in qj values (2-D, 12 months)  \\ \hline 
+fastj\_opt             & I & 0 & fastj option (set together with phot\_opt=3):  \\
+                 &   &   &                               0:  for fastj  \\
+                 &   &   &                               1:  for fast\_JX  \\
+                 &   &   &                               2:  for fast\_JX53b  \\ 
+                 &   &   &                               3:  for fast\_JX53c  \\ \hline
+cross\_section\_file  & C*128 & ' '       &  X-Section quantum yield input file name \\ \hline
+rate\_file            & C*128 & ' '       &  Master input file name \\ \hline
+T\_O3\_climatology\_file & C*128 & ' '    &  T \& O3 climatology input file name \\ \hline
+scattering\_data\_file & C*128 & ' ' & Aerosol/cloud scattering data input file name \\ 
+                       &       &     & Only used for fast\_JX53b and fast\_JX53c  \\ \hline
+do\_ozone\_inFastJX    & L &  F  & Should ozone columns be computed inside fast\_JX?  \\ 
+                       &   &     & By default fast\_JX uses the model ozone columns.  \\ \hline
+do\_clear\_sky         & L &  T  & Should clear sky photolysis  be done?  \\ \hline
+fastj\_offset\_sec     & R &  0.0d0    & Offset from model time at which to do fastj (s).  \\ \hline
+qj\_init\_val          & R &  1.0d-30  & When phot\_opt = 1, this value will be used  \\
+                 &   &   &   to initialize all qj values.  \\ \hline
+qj\_infile\_name       & C*128 & ' '       & qj input file name.  \\ \hline
+\multicolumn{4}{|l|}{\bf Surface albedo:} \\ \hline
+sfalbedo\_opt    & I & 0 & Surface albedo option:  \\
+                 &   &   & 0:  no sfalbedo  \\
+                 &   &   & 1:  set each type of sfalbedo to an intial value  \\
+                 &   &   & 2:  read in monthly sfalbedo values from a  netCDF file \\
+                 &   &   & 3:  read in values of four types of surface albedo from the met data \\ \hline 
+saldif\_init\_val      & R & 0.1 & Surface albedo for diffuse light (near IR);  \\
+                 &   &   & when sfalbedo\_opt = 1, this value will be used  \\
+                 &   &   & to initialize all saldif values.  \\ \hline
+saldir\_init\_val      & R & 0.1 & Surface albedo for direct light (near IR);  when sfalbedo\_opt = 1, \\
+                       &   &   & this value will be used to initialize all saldir values.  \\ \hline
+sasdif\_init\_val      & R & 0.1 & Surface albedo for diffuse light (uv/vis); when sfalbedo\_opt = 1,  \\
+                 &   &   & this value will be used to initialize all sasdif values.  \\ \hline
+sasdir\_init\_val      & R & 0.1 & Surface albedo for direct  light (uv/vis);  when sfalbedo\_opt = 1,  \\
+                 &   &   & this value will be used to initialize all sasdir values.  \\ \hline
+sfalbedo\_infile\_name & C*128 & ' ' & Surface albedo input file name.  \\ \hline
+\multicolumn{4}{|l|}{\bf Solar Cycle:} \\ \hline
+do\_solar\_cycle & L & F & Should solar cycle for incoming radiation be turned on?  \\
+                 &   &   & (currently works with lookup table only)  \\ \hline
+sc\_infile\_name &C*128 & ' ' & file for solar cycle coefficients  \\ \hline
+\multicolumn{4}{|l|}{\bf UV albedo:} \\ \hline
+uvalbedo\_opt         & I & 0 & UV albedo option:  \\
+                 &   &   &    0:  no uvalbedo  \\
+                 &   &   &    1:  set all uvalbedo values to uvalbedo\_init\_val  \\
+                 &   &   &    2:  read in monthly uvalbedo values from an ASCII file  \\
+                 &   &   &    3:  read in bulk surface albedo values from the  met data \\ \hline
+uvalbedo\_init\_val    & R & 0.1 & When uvalbedo\_opt = 1, this value will be used  \\
+                 &   &   &        to initialize all uvalbedo values.  \\ \hline
+uvalbedo\_infile\_name & C*128 & ' ' & Uvalbedo input file name.  \\ \hline \hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Tracer SECTION} \\ \hline\hline
+tracer\_opt       & I & 0 & Tracer run option:  \\
+                 &   &   &         0:  no tracer  \\
+                 &   &   &         1:  regular tracer with e-folding corrections  \\
+                 &   &   &         2:  Age of Air tracer  \\
+                 &   &   &         3:  HTAP TP1 CO tagged tracer  \\
+                 &   &   &         4:  CH4 tagged tracer \\ \hline
+efold\_time      & R & 0.0 & e-folding time of the tracer (in days)  \\ \hline
+tr\_source\_land      & R & 0.0 & land source for the tracer  \\ \hline
+tr\_source\_ocean      & R & 0.0 & ocean source for the tracer  \\ \hline\hline
+%
+%
+%
+\multicolumn{4}{|c|}{\bf Lightning SECTION} \\ \hline\hline
+lightning\_opt       & I & 0 & Lighning option:  \\
+                 &   &   &         0:  lightning NO emissions read from file  \\
+                 &   &   &         1:  parameterized lightning  \\ 
+                 &   &   &         2:  no lightning  \\ \hline
+lightCoeff\_infile\_name & C*128 & &  Used for lightning\_opt = 1.\\ 
+             &     &  & Provides lightning ratios for each month of the year, \\
+             &     &  & and the vertical levels for the cldmas variable. \\ \hline
+i\_no\_lgt      & I & 0 & Index to the location of NO\_lgt in the emiss infile  \\ \hline
+desired\_g\_N\_prod\_rate & R & 5.0 & global nitrogen production rate (in Tg.)  \\ \hline\hline
+%
+%
+\caption{Resource file variables}
+\label{tab:rcFile}
+\end{longtable}
+\end{center}
+
+\end{landscape}
+
+}

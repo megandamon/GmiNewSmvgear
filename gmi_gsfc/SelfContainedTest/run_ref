@@ -1,0 +1,39 @@
+#PBS -S /bin/csh
+#PBS -N gmic_test
+#PBS -q general
+#PBS -l select=16:ncpus=4
+#PBS -l walltime=01:00:00
+#PBS -W group_list=a930b
+#PBS -j eo 
+#PBS -V
+
+# CHANGE THIS 
+setenv workDir ../?/SelfContainedTest/
+
+cd $workDir
+ 
+setenv GEMHOME $workDir/../Applications/GmiBin 
+setenv CHEMCASE strat_trop
+
+module purge
+module load comp/intel-9.1.042
+module load mpi/scali-5.3
+
+limit stacksize unlimited
+mpirun -np 64 -inherit_limits $GEMHOME/gmi.x -d namelist2x2.5.in 
+
+diff test_gmi.asc results/test_gmi.asc > /dev/null
+if (! $status) then
+   echo ``ascii file is ok...``
+else
+   echo ``ascii file failed``
+endif
+
+diff test_gmi_flux.nc results/test_gmi_flux.nc > /dev/null
+if (! $status) then
+   echo ``flux file is ok...``
+else
+   echo ``flux file test failed!``
+endif
+
+

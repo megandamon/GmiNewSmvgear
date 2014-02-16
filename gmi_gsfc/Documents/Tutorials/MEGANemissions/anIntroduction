@@ -1,0 +1,179 @@
+!---------------------------------------------------------------------
+!  NASA/GFSC, SIVO, Code 610.3
+!---------------------------------------------------------------------
+!
+!BOI
+! !TITLE: {\huge \bf MEGAN Biogenic Emissions in the GMI Code}
+!
+! !AUTHORS: Jules Kouatchou
+!
+! !AFFILIATION:  NASA Goddard Space Flight Center} \\ {\em Software Integration and Visualization Office} \\ {\em Advanced Software Technology Group} \\ {\em Code 610.3} \\  {\em Greenbelt, MD 20771} \\  {Jules.Kouatchou@nasa.gov
+!
+! !DATE: February 5, 2008
+!
+! !INTRODUCTION: Introduction 
+! The goal of MEGAN (Model of Emissions of Gases and Aerosols from Nature) 
+! is to develop a new modeling framework based on the 
+! most recent science to estimate biogenic emissions of reactive gases 
+! and aerosols needed for both regional air quality models and global 
+! chemistry and transport models. MEGAN is designed to be continually
+! updated as our understanding of chemical emissions from plants expands, 
+! and further, to be useable by both research scientists and regulatory 
+! air quality modelers 
+! \cite{Guenther-Wiedinmyer06, Guenther-etal06, Muller-etall07, Janssen06}.
+!
+! \vskip 0.5cm
+!
+! MEGAN biogenic emissions were implemented in 
+! GEOS-Chem \footnote{http://www.as.harvard.edu/chemistry/trop/geos/} for the following
+! species: Isoprene, Acetone, PRPE, Monoterpenes, and Methyl Butenol.
+! In this work, we adapted the GEOS-Chem implementation to the GMI 
+! code \cite{Kouatchou-etal}.
+! Though the code can accomodate for all the above species, we are only
+! using Isoprene and Monoterpenes.
+!
+! \vskip 0.5cm
+!
+! MEGAN biogenic emissions require:
+! %
+! \begin{itemize}
+! \item The availability  at any given integration time of surface temperature
+!       for the previous fifteen (15) days.
+!       For each day, a daily average is calculated and an average (over fifteen
+!       days) is computed.
+! \item The current values of surface temepratures.
+! \item Diffuse photosynthetically active radiation and direct photosynthetically 
+!       active radiation at any time step. These are metFields variables read
+!       in from files.
+! \item Annual emission factor for isoprene (coming from an input file)
+! \item Annual emission factor for monoterpenes (coming from an input file)
+! \item AVHRR leaf area index data
+! \end{itemize}
+!
+! \vskip 0.5cm
+!
+! For our implementation, we simplified the package provided by GEOS-Chem.
+! At the beginning of the simulation, the GMI code extracts surface temperature
+! data from metFields files for the fifteen days prior to the starting date.
+! During the model integration, the code reads in surface temperature at the
+! beginning of a new day and a new average (over 15 days) is determined.
+! All these procedures are done by all the worker processors.
+! In addition, the worker processors read all the MEGAN related input files.
+!
+! \vskip 0.5cm
+!
+! The subroutine to compute MEGAN biogenic emissions is named 
+! {\em calcBiogenicMEGANemission}.
+! It is called in the routine {\em Update\_Emiss\_Harvard}.
+! The piece of code below shows how {\em calcBiogenicMEGANemission}
+! is used.
+! Note that the old formulation for calculating biogenic emissions
+! is still available.
+!
+! \begin{verbatim}
+!      if (doMEGANemission) then
+!         call calcBiogenicMEGANemission(emiss_isop, emiss_monot, days_btw_m, &
+!     &            aefIsop, aefMbo, aefMonot, isoLai, isoLaiCurr, isoLaiPrev, &
+!     &            tempk, T_15_AVG, pardif, pardir, cosSolarZenithAngle, &
+!     &            pr_diag, loc_proc, i1, i2, ju1, j2)
+!
+!         ! Perform conversions if necessary
+!         tdtinv = 1.0d0 / tdt
+!
+!         emiss_isop = emiss_isop * tdtinv / ATOMSC_PER_MOLECISOP *  &
+!     &                        (mw(iisoprene_num) / AVOGAD) * KGPG
+!
+!         emiss_monot = emiss_monot * tdtinv / ATOMSC_PER_MOLECMONOT *  &
+!     &                          (MWTMONOT / AVOGAD) * KGPG
+!       else
+!         call Do_Biogenic_Emiss(iisoprene_num, ireg, iland, iuse, tdt, mw, &
+!     &            cosSolarZenithAngle, mcor, tempk, fracCloudCover, &
+!     &            coeff_isop, convert_isop, convert_monot, xlai, base_isop, &
+!     &            base_monot, emiss_isop, emiss_monot, pr_diag, loc_proc, &
+!     &            i1, i2, ju1, j2, num_species)
+!       end if
+! \end{verbatim}
+!
+! In the appendix section, we provide a short description of the routine
+! {\em calcBiogenicMEGANemission}.
+!
+! The MEGAN emissions no longer require the use of the following variables and
+! files (only employed in the old formulation):
+! %
+! \begin{verbatim}
+!  coeff_isop           : coefficients used for polynomial fit
+!  convert_isop         : isoprene emissions by landtype 
+!  convert_monot        : monoterpene emissions by landtype
+!  base_isop            : baseline emissions for isoprene
+!  base_monot           : baseline emissions for monoterpenes
+!  isopconv_infile_name : isoprene    convert input file name
+!  monotconv_infile_name: monoterpene convert input file name
+! \end{verbatim}
+!
+! Here is sample namelist setting to use MEGAN emissions:
+! %
+! \begin{verbatim}
+! &nlGmiMetFields
+! ...
+! met_infile_num = 16,
+! ...
+! &nlGmiEmission
+! ...
+! doMEGANemission          = T,
+! aefMboMEGAN_InfileName   = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_MBO.geos.2x2.5.nc',
+! aefIsopMEGAN_InfileName  = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/NEW_MEGAN_AEF_ISOP.geos.2x2.5.nc',
+! aefMonotMEGAN_InfileName = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_MTP.geos.2x2.5.nc',
+! aefOvocMEGAN_InfileName  = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/MEGAN_AEF_OVC.geos.2x2.5.nc',
+! laiMEGAN_InfileName      = '/discover/nobackup/kouatch/GMI/inputData/MEGAN/avhrrlai.global.geos.2x2.5.2000.nc',
+! ...
+! \end{verbatim}
+! %
+! For the above setting, it is important to note that the first metFields file to be read in as far as
+! the model integration is concerned is the $16^{th}$ file 
+! (met\_infile\_num = 16) in the metFields file list.
+! Files 1-15 are used to compute the average (over 15 days) values of surface
+! temperatures.
+! The code will crash if met\_infile\_num is not set to at least 16.
+! This is done with the assumption all the daily records are contained in one file.
+! However, there can be situations where daily records are spread over several metFields files.
+! In such case, users should provide as many files as needed to cover the first 15 days of
+! surface temperature data.
+! {\bf As a general rule if the daily records are spread in $n$ files, then $15 \times n$ metFields will
+! be required to initialize the MEGAN package.}
+!
+! \vskip 0.5cm
+!
+! \noindent
+! {\bf Acknowlegment:} We wish to thank Bob Yantosca for providing the MEGAN package to us and for
+! his useful comments and suggestions.
+!
+! \begin{thebibliography}{99}
+! \bibitem{Kouatchou-etal} J. Kouatchou, B. Das and H. Oloso,
+!  Global Modeling Initiative: Tutorial and User's Guide,
+!  online documentation available at
+!  {\tt http://gmi.gsfc.nasa.gov/tutorial/index.html}.
+! \bibitem{Guenther-Wiedinmyer06} A. Guenther and C. Wiedinmyer,
+!  MEGAN User's Guide, 
+!  online documentation available at
+!  {\tt http://acd.ucar.edu/guenther/MEGAN/MEGANusersguide.pdf}.
+! \bibitem{Guenther-etal06} A. Guenther, T. Karl, P. Harley, C. Wiedinmyer,  
+!  P. Palmer, and C. Geron, 
+!  Estimates of global terrestrial isoprene emissions using MEGAN 
+!  (Model of Emissions of Gases and Aerosols from Nature), 
+!  {\em Atmos. Chem. Phys.}, {\bf 6}, 3181–3210 (2006).
+! \bibitem{Janssen06} M. Janssen,
+!  Implementation of the model of emissions of gases and aerosol from nature
+!  (MEGAN) into the concept modeling framework,
+!  Alpine Geosphysiscs, AG-TS-90/236, June 16, 2006.
+!  \bibitem{Muller-etall07} -F. Muller, T. Stavrakou, S. Wallens, I. De Smedt,
+!   M. Van Roozendae, M. J. Potosnak, J. Rinne, B. Munger, A. Goldstein,
+!   and A. B. Guenther,
+!   Global isoprene emissions estimated using MEGAN, ECMWF analyses and a
+!   detailed canopy environment model,
+!   {\em Atmos. Chem. Phys. Discuss.}, {\bf 7}, 15373–15407 (2007).
+! \end{thebibliography}
+!
+! \appendix
+!%
+!EOI 
+!---------------------------------------------------------------------

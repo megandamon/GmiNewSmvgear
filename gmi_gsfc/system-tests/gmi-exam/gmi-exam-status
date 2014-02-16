@@ -1,0 +1,187 @@
+#!/usr/bin/perl -w
+#_______________________________________________________________________________
+#
+#  gmi-exam-status :  Pre-release prototype code.  Invocation Example(s):
+#
+#  ./gmi-exam-status   /scr/$USER/GMIexam  20051118-062810  mailme
+#  ./gmi-exam-status  /home/$USER/GMIexam  20051118-062810
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+use strict;
+#->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+my ($alldone, $allgood, $dl, $examhome, $gmiroot, $mailoption);
+my ($openmax, $openwait, $preposition, $rc, $stat, $testname);
+my ($zlockdir, $zlogfile, $ztime);
+my (@rows);
+
+$dl = '=' x 70;    # Divider line of 70 equal sign characters.
+#_______________________________________________________________________________
+#
+#  Begin basic checks and preparations related to I/O arguments, files, etc.
+#_______________________________________________________________________________
+#
+if ( @ARGV < 2  ||  @ARGV > 3 )
+{  print "\n\nERROR.  This program uses 2-3 inputs.  Read its comments.\n";
+   print "Execution Halted.\n";
+   exit 3;
+}
+if ( @ARGV < 3 )
+{  ($gmiroot, $ztime) = @ARGV;
+   $mailoption = '';
+}  else
+{  ($gmiroot, $ztime, $mailoption) = @ARGV;
+}
+if ( $mailoption )  { $mailoption = 'mailme'; }
+
+$openmax  = 10;  # Maximum number of times to try to secure a lock on the log.
+$openwait =  3;  # Number of seconds to wait between attempts to lock the log.
+
+$examhome = "$gmiroot/system-tests/gmi-exam";
+$zlockdir = "$examhome/Test-jobs/lockdir-$ztime";
+$zlogfile = "$examhome/Test-jobs/logfile-$ztime";
+
+#$Dbug=0;print "L=$zlogfile\n";
+
+$rc = Create_lock ( \$zlockdir, \$openmax, \$openwait );
+if ( $rc )
+{  print "\nERROR!  The Create_lock module could not lock up directory:\n$dl\n"
+       . "$zlockdir\n\nRC = $rc\nExecution Halted.\n";
+   exit 4;
+}
+unless ( open ( LOG, "$zlogfile" ) )
+{  print "\nERROR!  Unexpected failure on attempt to open:\n$dl\n"
+       . "$zlogfile\n\nOPEN Error: $!\nExecution Halted.\n";
+   exit 5;
+}
+chomp(@rows = <LOG>);
+close        ( LOG );
+$alldone     = 1;
+$allgood     = 1;
+$preposition = 'for';
+$testname    = 'chemtype/testcase';
+
+unless ( $mailoption )  { print "\nCurrent state of $zlogfile\n$dl\n\n"; }
+for ( @rows )
+{  unless ( $mailoption )  { print "$_\n"; }
+   ($stat, $preposition, $testname) = split;
+#$Dbug=0;print "S=$stat / I = $testname\n";
+   if ( $stat ne 'SUCCESS' )  { $allgood = 0; }  
+   if ( $stat eq 'WAITING' )  { $alldone = 0; }
+}
+$rc = Remove_lock ( \$zlockdir );
+if ( $rc )
+{  print "\nERROR!  The Remove_lock module could not remove directory:\n$dl\n"
+       . "$zlockdir\n\nRC = $rc\nExecution Halted.\n";
+   exit 6;
+}
+if ( $allgood )  { exit 0; }   # ALL tests succeeded.
+if ( $alldone )  { exit 1; }   # At least one test failed.
+exit 2;                        # Still waiting for some of the test results.
+#_______________________________________________________________________________
+#
+#  NOTE:  This is a Pre-release prototype module used by the "gmi-exam" modules.
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+#  Create_lock :  Attempts to create a subdirectory to serve as proof that the
+#                 current process can expect to have a "lock" on another entity.
+#
+#                 This module was written to provide a generic solution for
+#                 setting up a simple file locking mechanism that does not rely
+#                 on the OS to support Perl functions that accomodate this.
+#_______________________________________________________________________________
+#
+#  Usage:
+#
+#  The calling routine(s) use this module in conjunction with another module
+#  named Remove_lock to reserve and release the use of a shared entity, like
+#  a log file that multiple routines must read and update without collisions.
+#
+#  The calling routine will supply references to 3 inputs in this manner:
+#
+#  $rc = Create_lock ( \$lockdir, \$openmax, \$openwait );
+#
+#  Up to "openmax" attempts will be made to create the directory "lockdir",
+#  and if a failure occurs, this routine will sleep for "openwait" seconds
+#  before making the next attempt to create "lockdir".
+#
+#  If all attempts fail, a non-zero return code is passed back.
+#_______________________________________________________________________________
+#
+sub Create_lock
+{  use strict;
+   my $sd = $_[0];  # String defining Subdirectory to create as a lock flag.
+   my $om = $_[1];  # Maximum number of times to attempt creation of a lock.
+   my $ow = $_[2];  # Number of seconds to wait between lock creation attempts.
+
+#-->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+   my ($mklimit, $rc, $runthis, @nolines);
+   $mklimit = $$om;
+   $runthis = "mkdir $$sd  2>&1";
+
+#$Dbug=0;print "R=$runthis\nM=$$om\nW=$$ow\n";
+
+   while ( $mklimit )
+   {  @nolines = `$runthis`;
+      $rc = $? >> 8;
+      unless ( $rc )  { return 0; }
+
+#$Dbug=0;print "\nMKerrors follow...\n\n@nolines";
+      $mklimit--;
+      if ( $mklimit )
+      {  $rc = system "sleep $$ow";
+         if ( $rc )  { exit 9; }     # Allow user to terminate via Control-C.
+#$Dbug=0; print "Sleep ended for countdown = $mklimit\n";
+      }
+   }
+   return 1;
+}
+#_______________________________________________________________________________
+#
+#  NOTE:  This is a Pre-release prototype module used by the "gmi-exam" modules.
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+#  Remove_lock :  Removes a subdirectory that served as proof that the current
+#                 process had reserved a "lock" related to another entity.
+#
+#                 This module was written to provide a generic solution for
+#                 setting up a simple file locking mechanism that does not rely
+#                 on the OS to support Perl functions that accomodate this.
+#
+#                 This module is used in conjunction with
+#                 (and after) a call to another module named Create_lock.
+#_______________________________________________________________________________
+#
+sub Remove_lock
+{  use strict;
+   my $sd = $_[0];  # String defining Subdirectory to remove (as the lock flag).
+
+#-->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+   my ($rc, $runthis, @nolines);
+   $runthis = "rmdir $$sd  2>&1";
+
+#$Dbug=0;print "R=$runthis\n";
+
+   @nolines = `$runthis`;
+   $rc = $? >> 8;
+   unless ( $rc )  { return 0; }
+#$Dbug=0;print "RMerrors follow...\n\n@nolines";
+   return 1;
+}

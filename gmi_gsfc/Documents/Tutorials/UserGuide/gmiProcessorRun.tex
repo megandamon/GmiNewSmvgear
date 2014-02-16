@@ -1,0 +1,39 @@
+\chapter[Single/Multiple Processor Runs]{Single/Multiple Processor Runs} 
+\label{chap:proc_runs}
+
+We describe how to carry multiple processor runs.
+Before you compile the code, you need to edit the file
+{\em Config\_sys\_options.h} and set
+%
+\begin{verbatim}
+    #define MSG_OPTION MSG_MPI
+\end{verbatim}
+%
+for the multiple processor run.
+
+After you obtained the executable, you need to edit your input
+resource file.
+
+\vskip 0.5cm
+
+{\bf Namelist Variables for Multiple CPUs} \newline
+%
+\begin{verbatim}
+  NX: 4
+  NY: 4
+\end{verbatim}
+%
+The following relationships need to be satisfied in order to run the code:
+%
+\begin{eqnarray*}
+%$$
+\begin{array}{rcl}
+\frac{IM}{NX} & \ge & gmi\_nborder \\
+               &   &      \\
+\frac{JM}{NY} & \ge & gmi\_nborder
+\end{array}
+%$$
+\end{eqnarray*}
+%
+Here {\em NX}, {\em NY}, {\em IM}, {\em JM}, and {\em gmi\_nborder} are
+resource file variables (see Appendix \ref{chap:rcFile}).

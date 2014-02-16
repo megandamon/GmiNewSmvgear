@@ -1,0 +1,94 @@
+\documentclass[11pt,twoside]{report}
+\usepackage{fancyhdr}                  % Fancy Header and Footer
+\usepackage{threeparttable}
+\usepackage{pdflscape}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{rotating}                  % Sideways of figures & tables
+\usepackage[body={6.8in, 8.5in},left=1.25in,right=1.25in]{geometry}
+%\usepackage[body={6.0in, 8.2in},left=1.25in,right=1.25in]{geometry}
+                                       % Geometry package for easy page margin
+                                       % setup
+%\usepackage{amsmath,amssymb}           % AMS Math
+%\usepackage[sectionbib]{natbib}        % Cross-reference package (Natural BiB)
+%\usepackage{chapterbib}                % Put References at the end of each chapter
+                                       % Do not put 'sectionbib' option here.
+                                       % Sectionbib option in 'natbib' will do.
+%\usepackage{setspace}                  % Line spacing
+%\doublespacing
+%\usepackage{txfonts}                   % Public Times New Roman text & math font
+%
+					% SOME USEFUL OPTIONS:
+%%% Fancy Header %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Fancy Header Style Options
+%\pagestyle{fancyplain}                       % Sets fancy header and footer
+\pagestyle{fancy}                       % Sets fancy header and footer
+\fancyhf{}                            % Delete current header and footer settings
+\renewcommand{\chaptermark}[1]{         % Lower Case Chapter marker style
+  \markboth{\chaptername\ \thechapter.\ #1}{}} %
+\renewcommand{\sectionmark}[1]{         % Lower case Section marker style
+  \markright{\thesection.\ #1}}         %
+\fancyhead[RE]{\bfseries\leftmark}      % Chapter in the right on even pages
+\fancyhead[LO]{\bfseries\rightmark}     % Section in the left on odd pages
+\fancyfoot[LE,RO]{\bfseries\thepage}
+\fancyfoot[LO,RE]{\bfseries GMI User's Guide}
+\renewcommand{\headrulewidth}{0.4pt}    % Width of head rule
+\renewcommand{\footrulewidth}{0.4pt}    % Width of foot rule
+%
+%\renewcommand{\plainheadrulewidth}{0.4pt}    % Width of head rule
+%\renewcommand{\plainfootrulewidth}{0.4pt}    % Width of foot rule
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%% END OF PREAMBULE %%%%%%%%%%%%%%%%%%
+\begin{document}
+\pagenumbering{roman}			% Roman numerals from abstract to text
+\thispagestyle{empty}			% no page number on THIS page
+
+\title{\Huge \bf Global Modeling Initiative: \\ Tutorial and User's Guide II}
+\author{{\sc Jules Kouatchou, Megan Damon and Gary Wojcik} \\
+{\Large\bf Software Integration and Visualization Office} \\
+NASA Goddard Space Flight Center \\
+Greenbelt, MD 20771}
+%\date{ }
+\maketitle
+
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{theorem}{Theorem}
+\newtheorem{Corollary}{Corollary}
+
+
+\include{gmiAbstract}
+%\include{gmiAcknowledgment}
+
+\tableofcontents
+\listoftables
+\listoffigures
+
+%\newpage
+
+\include{gmiIntroduction}
+\include{gmiCodeStructure}
+\include{gmiInstallationTesting}
+\include{gmiInOutFiles}
+\include{gmiSpecificRuns}
+\include{gmiMakingCodeChanges}
+\include{gmiScriptTools}
+\include{gmiCVS}
+\include{gmiParallelPerformance}
+
+\bibliographystyle{plain}
+\bibliography{biblio_gmi}
+
+\appendix
+
+\include{gmiIncludeFiles}
+\include{gmiProcessorRun}
+\include{gmiContentNetcdfOutFiles}
+\include{gmiNewFeatures}
+\include{gmiListSpecies}
+\include{gmiNamelistVariables}
+
+\end{document}

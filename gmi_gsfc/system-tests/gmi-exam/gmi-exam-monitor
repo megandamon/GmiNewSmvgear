@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+#_______________________________________________________________________________
+#
+#  gmi-exam-monitor :  Pre-release prototype code.  Invocation Example(s):
+#
+#  ./gmi-exam-monitor   /scr/$USER/GMIexam  20051118-062810  mailme
+#  ./gmi-exam-monitor  /home/$USER/GMIexam  20051118-062810
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+use strict;
+#->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+my ($dl, $examhome, $gmiroot, $longmax, $longnap, $m);
+my ($mailoption, $rc, $runthis, $s, $statusing, $tinymax);
+my ($tinynap, $zlogfile, $ztime, $zuser);
+my (@nolines);
+
+$dl = '=' x 70;    # Divider line of 70 equal sign characters.
+#_______________________________________________________________________________
+#
+#  Begin basic checks and preparations related to I/O arguments, files, etc.
+#_______________________________________________________________________________
+#
+if ( @ARGV < 2  ||  @ARGV > 3 )
+{  print "\n\nERROR.  This program uses 2-3 inputs.  Read its comments.\n";
+   print "Execution Halted.\n";
+   exit 1;
+}
+if ( @ARGV < 3 )
+{  ($gmiroot, $ztime) = @ARGV;
+   $mailoption = '';
+}  else
+{  ($gmiroot, $ztime, $mailoption) = @ARGV;
+}
+if ( $mailoption )  { $mailoption = 'mailme'; }
+
+$longmax =    3;  # Maximum number of long naps before abandoning status checks.
+$longnap = 3600;  # Number of seconds to wait before next wave of status checks.
+$tinymax =   15;  # Maximum number of quick statuses to run before a long nap.
+$tinynap =  120;  # Number of seconds to wait between a series of quick checks.
+
+#$Dbug=0; $longmax = 3; $longnap = 20;
+#$Dbug=0; $tinymax = 8; $tinynap =  5;
+
+#$Dbug=0; $tinymax = 5; $tinynap =  2;
+
+$examhome = "$gmiroot/system-tests/gmi-exam";
+$zlogfile = "$examhome/Test-jobs/logfile-$ztime";
+
+$runthis  = "$examhome/gmi-exam-status $gmiroot $ztime $mailoption";
+
+#$Dbug=0;$runthis = 'date; exit 2';
+
+while ( $longmax )
+{  $statusing = $tinymax;
+   while ( $statusing )
+   {  @nolines = `$runthis`;
+      $rc = $? >> 8;
+#$Dbug=0; print "\nRC = $rc\n"; for ( @nolines )  { print; }
+
+      if ( $rc < 2 )  { $longmax = 1; last; }  # SUCCESS/FAILURE now conclusive.
+      if ( $rc > 2 )
+      {  print "\n\nERROR!  Unexpected gmi-exam-status failure detected.\n";
+         print "RC = $rc\nExecution Halted.\n";
+         exit 13;
+      }
+      $statusing--;
+      if ( $statusing )
+      {  $rc = system "sleep $tinynap";
+         if ( $rc )  { exit 9; }     # Allow user to terminate via Control-C.
+#$Dbug=0; print "Sleep ended for tiny countdown = $statusing\n";
+      }
+      @nolines = ();
+   }
+   $longmax--;
+   if ( $longmax )
+   {  $rc = system "sleep $longnap";
+         if ( $rc )  { exit 9; }     # Allow user to terminate via Control-C.
+#$Dbug=0; print "Sleep ended for long countdown = $longmax\n";
+   }
+}
+#$Dbug=0; print "Final rc = $rc\n";
+
+if    ( $rc < 1 )
+{  $m = "\nSuccessful results detected for the GMI test(s).\n"
+      . "\nPlease inspect all results to verify this conclusion.\n";
+   $s = 'GMI Test(s) seem to be Successful';
+}
+elsif ( $rc < 2 )
+{  $m = "\nOne or more Failures detected for the GMI test(s).\n"
+      . "\nAll results should be inspected to determine the cause of\n"
+      . "the failures, and if changes are needed for the code or test data.\n"
+      . "\nSee this file for a summary of the statuses:\n$dl\n$zlogfile\n";
+   $s = 'GMI Test(s) yielded at least one FAILURE';
+}  else
+{  $m = "\nOne or more GMI test(s) have not yet reported their status.\n"
+      . "\nSince the monitoring time limit has been reached, this seems\n"
+      . "to indicate that some jobs may still be waiting to complete due to\n"
+      . "busy batch queues, or a harsh failure occurred, like a time limit\n"
+      . "or a node crash that has prevented a report of the final status.\n"
+      . "\nPlease inspect all results very carefully.\n\nThis file, which "
+      . "may still get updated later, summarizes statuses:\n$dl\n$zlogfile\n";
+   $s = 'GMI Test Result(s) FAILED to be Reported due to UNKNOWN reasons';
+}
+if ( $mailoption )
+{  $zuser = $ENV{USER};
+   open (EM, "| Mail -s '$s' $zuser");
+   print EM "$m";
+}  else
+{  print  "\n$s\n";
+   print    "$m";
+}
+exit $rc;

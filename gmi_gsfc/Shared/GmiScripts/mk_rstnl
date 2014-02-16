@@ -1,0 +1,399 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill , LLNL     , jrt@llnl.gov
+#   Jules Kouatchou, NASA/GSFC, Jules.Kouatchou-1@nasa.gov
+#
+# FILE
+#   mk_rstnl (make restart namelist)
+#
+# DESCRIPTION
+#   This script constructs an GMI restart namelist file.  See
+#   README.restart for additional details.
+#
+# SUBROUTINES
+#   ensure_dexp
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use English;
+use Env;
+
+
+my $script_name = "mk_rstnl";
+
+my $host_machine = $ENV{HOSTMACH};
+my $nc_dump;
+
+
+#------------------
+# Check for ncdump.
+#------------------
+
+if ($host_machine eq 'seaborg_machine') {
+  $nc_dump = "/usr/common/usg/netcdf/3.5/bin/ncdump";
+}
+else {
+  $nc_dump = "ncdump";
+}
+
+my $status = system ("which $nc_dump >& /dev/null");
+
+if ($status != 0) {
+  print "File not found:  $nc_dump\n";
+# ======
+  exit 1;
+# ======
+}
+
+
+#------------------------
+# Get & check arguments.
+#------------------------
+
+my $err = 0;
+
+my $old_nlfile_arg;
+my $new_nlfile_arg;
+my $rst_ncfile_arg;
+my $endGmiDate_arg;
+my $endGmiTime_arg;
+my $problem_name_arg = "NULL";
+
+
+print "\n";
+
+
+if (($#ARGV < 7) || ($#ARGV > 9)) {
+  $err = 1;
+  print "WRONG NUMBER OF ARGUMENTS IN $script_name; EXITING.\n\n";
+}
+else {
+  XARGS: while (@ARGV) {
+    if    ($ARGV[0] =~ "-onl") { $old_nlfile_arg   = $ARGV[1]; }
+    elsif ($ARGV[0] =~ "-nnl") { $new_nlfile_arg   = $ARGV[1]; }
+    elsif ($ARGV[0] =~ "-rst") { $rst_ncfile_arg   = $ARGV[1]; }
+    elsif ($ARGV[0] =~ "-eda") { $endGmiDate_arg   = $ARGV[1]; }
+    elsif ($ARGV[0] =~ "-eti") { $endGmiTime_arg   = $ARGV[1]; }
+    elsif ($ARGV[0] =~ "-npn") { $problem_name_arg = $ARGV[1]; }
+    else {
+      $err = 1;
+      print "UNRECOGNIZED ARGUMENT IN $script_name:  $ARGV[0]; EXITING.\n\n";
+      #=========
+      last XARGS;
+      #=========
+    }
+    shift @ARGV;
+    shift @ARGV;
+  }
+}
+
+if ($err == 1) {
+  print "Usage:  $script_name\n";
+  print "          -onl <old_nlfile>  -nnl <new_nlfile>\n";
+  print "          -rst <rst_ncfile>  -eda <endGmiDate> -eti <endGmiTime>\n";
+  print "          [-npn <problem_name>]\n\n";
+# ======
+  exit 1;
+# ======
+}
+
+
+#-----------------------
+# Check for input files.
+#-----------------------
+
+if (!-e $old_nlfile_arg) {
+  print "File not found:  $old_nlfile_arg\n";
+# ======
+  exit 1;
+# ======
+}
+
+if (!-e $rst_ncfile_arg) {
+  print "File not found:  $rst_ncfile_arg\n";
+# ======
+  exit 1;
+# ======
+}
+
+
+#-----------------
+# Echo arguments.
+#-----------------
+
+print "------------------\n";
+print "Argument settings:\n";
+print "------------------\n";
+
+print "  old_nlfile   = $old_nlfile_arg\n";
+print "  new_nlfile   = $new_nlfile_arg\n";
+print "  rst_ncfile   = $rst_ncfile_arg\n";
+print "  endGmiDate   = $endGmiDate_arg\n";
+print "  endGmiTime   = $endGmiTime_arg\n";
+
+if ($problem_name_arg ne "NULL") {
+  print "  problem_name = $problem_name_arg\n\n";
+}
+
+
+#-------------------------------------------------------------------
+# Make a copy of the original namelist file with all of the restart
+# variables removed.  These will be set and reinserted later.
+#-------------------------------------------------------------------
+
+my $line;
+my @new_lines;
+my $problem_name;
+
+if ($problem_name_arg ne "NULL") { $problem_name = $problem_name_arg; }
+
+open (INFIL,  "< $old_nlfile_arg") or
+  die "\nIN $script_name, CANNOT OPEN FILE $old_nlfile_arg:\n  $OS_ERROR\n\n";
+my @lines = <INFIL>;
+close (INFIL);
+ 
+foreach $line (@lines) {
+  if ($problem_name_arg eq "NULL") {
+    if ($line =~ "problem_name") {
+      my @fields    = split / /, $line;
+      $problem_name = chomp ($fields[4]);
+      substr ($problem_name, 0, 1) = "";
+      substr ($problem_name, -2)   = "";
+    }
+  }
+
+  unless (($line =~ "problem_name")   ||
+          ($line =~ "begGmiDate")     ||
+          ($line =~ "begGmiTime")     ||
+          ($line =~ "endGmiDate")     ||
+          ($line =~ "endGmiTime")     ||
+          ($line =~ "gmi_sec")        ||
+          ($line =~ "met_infile_num") ||
+          ($line =~ "mrnum_in")       ||
+          ($line =~ "tmet1")          ||
+          ($line =~ "pr_qqjk")        ||
+          ($line =~ "rd_restart")     ||
+          ($line =~ "restart_infile_name")) {
+    push @new_lines, $line;
+  }
+}
+
+
+#---------------------------------------------------------------------
+# Set the restart variables.  Get pertinent variables from the NetCDF
+# restart file.
+#---------------------------------------------------------------------
+
+my $endGmiDate      = "$endGmiDate_arg";
+my $endGmiTime      = "$endGmiTime_arg";
+my $rd_restart      = "T";
+my $rst_infile_name = "$rst_ncfile_arg";
+
+my $begGmiDate;
+my $begGmiTime;
+my $endGmiDate;
+my $endGmiTime;
+my $gmi_sec;
+my $met_infile_num;
+my $mrnum_in;
+my $tmet1;
+my $pr_qqjk_int;
+
+my $pr_qqjk;
+
+@lines = `$nc_dump -v nymd,nhms,gmi_sec,met_infile_num,mrnum_in,tmet1,pr_qqjk_int $rst_ncfile_arg`;
+
+# Remove the header lines from the ncdump.
+while ($lines[0] !~ "^data:\$") { shift @lines; }
+
+my $ind;
+my @fields;
+
+foreach $line (@lines) {
+
+  @fields = split / /, $line;
+  $ind    = $#fields - 1;
+
+  if    ($line =~ "nymd")           { $begGmiDate     = $fields[$ind]; }
+  elsif ($line =~ "nhms")           { $begGmiTime     = $fields[$ind]; }
+  elsif ($line =~ "gmi_sec")        { $gmi_sec        = $fields[$ind]; }
+  elsif ($line =~ "met_infile_num") { $met_infile_num = $fields[$ind]; }
+  elsif ($line =~ "mrnum_in")       { $mrnum_in       = $fields[$ind]; }
+  elsif ($line =~ "tmet1")          { $tmet1          = $fields[$ind]; }
+  elsif ($line =~ "pr_qqjk_int")    { $pr_qqjk_int    = $fields[$ind]; }
+}
+
+if ($pr_qqjk_int eq 1) { $pr_qqjk = "T"; }
+else                   { $pr_qqjk = "F"; }
+
+
+#------------------------------------------------------------------------
+# Ensure that there is a "d" exponent on all real variables that will be 
+# put into the restart namelist file.
+#------------------------------------------------------------------------
+
+#              ===========
+$gmi_sec     = ensure_dexp ($gmi_sec);
+$tmet1       = ensure_dexp ($tmet1);
+#              ===========
+
+
+#-------------------------------------------------------------------
+# Print out the restart variables that will be used to make the new
+# restart namelist file.
+#-------------------------------------------------------------------
+
+print "--------------------------------------------------------------------\n";
+print "Restart namelist settings that will be used (be sure to check them):\n";
+print "--------------------------------------------------------------------\n";
+
+print "  problem_name        = $problem_name\n";
+print "  begGmiDate          = $begGmiDate\n";
+print "  begGmiTime          = $begGmiTime\n";
+
+print "  endGmiDate          = $endGmiDate\n";
+print "  endGmiTime          = $endGmiTime\n";
+print "  gmi_sec             = $gmi_sec\n\n";
+
+print "  met_infile_num      = $met_infile_num\n";
+print "  mrnum_in            = $mrnum_in\n";
+print "  tmet1               = $tmet1\n\n";
+
+print "  pr_qqjk             = $pr_qqjk\n";
+
+print "  rd_restart          = $rd_restart\n";
+print "  restart_infile_name = $rst_infile_name\n\n";
+
+
+
+#----------------------------------------------------------------
+# Insert the properly set restart variables into the new restart
+# namelist file.
+#----------------------------------------------------------------
+
+my $i;
+
+@lines = ();
+
+for ($i = 0; $i <= $#new_lines; $i++) {
+
+  if ($new_lines[$i] =~ "&nlGmiControl") {
+    push @lines, "&nlGmiControl\n";
+    push @lines, "  problem_name = '$problem_name',\n";
+    push @lines, "  begGmiDate   = $begGmiDate,\n";
+    push @lines, "  begGmiTime   = $begGmiTime,\n";
+    push @lines, "  endGmiDate   = $endGmiDate,\n";
+    push @lines, "  endGmiTime   = $endGmiTime,\n";
+    push @lines, "  gmi_sec      = $gmi_sec,\n";
+  }
+
+  elsif ($new_lines[$i] =~ "&nlGmiMetFields") {
+    push @lines, "&nlGmiMetFields\n";
+    push @lines, "  met_infile_num         = $met_infile_num,\n";
+    push @lines, "  mrnum_in               = $mrnum_in,\n";
+    push @lines, "  tmet1                  = $tmet1,\n";
+  }
+
+  elsif ($new_lines[$i] =~ "&nlGmiDiagnostics") {
+    push @lines, "&nlGmiDiagnostics\n";
+    push @lines, "  pr_qqjk                = $pr_qqjk,\n";
+  }
+
+  elsif ($new_lines[$i] =~ "&nlGmiRestart") {
+    push @lines, "&nlGmiRestart\n";
+    push @lines, "  rd_restart             = $rd_restart,\n";
+    push @lines, "  restart_infile_name    = '$rst_infile_name',\n";
+  }
+
+  elsif ($new_lines[$i] =~ "&") {
+    push @lines, $new_lines[$i];
+  }
+
+  else {
+    chomp ($new_lines[$i]);         # get rid of carriage return    at EOL
+    $new_lines[$i] =~ s^\s*,$^^;    # get rid of whitespace & comma at EOL
+    $new_lines[$i] =~ s^\s*/$^^;    # get rid of whitespace & slash at EOL
+    push @lines, "$new_lines[$i]";
+
+    if ($i == $#new_lines) {
+      push @lines, "  /\n";
+    }
+    else {
+      if ($new_lines[$i+1] =~ "&") { push @lines, "  /\n"; }
+      else                         { push @lines, ",\n"; }
+    }
+
+  }
+
+}
+
+
+open (OUTFIL, "> $new_nlfile_arg") or
+  die "\nIn $script_name, cannot open file $new_nlfile_arg:\n  $OS_ERROR\n\n";
+print OUTFIL @lines;
+close (OUTFIL);
+
+
+print "---------------------------\n";
+print "Script was successful =>\n";
+print "  restart namelist file is:  $new_nlfile_arg.\n";
+print "---------------------------\n\n";
+
+
+#=====
+exit 0;
+#=====
+
+
+####################################
+# End of main; subroutines follow. #
+####################################
+
+
+#--------------
+sub ensure_dexp {
+#--------------
+ 
+  #------------------------------------------------------------------
+  # This subroutine ensures that there is a "d" exponent on any real
+  # variable that it is given.
+  #------------------------------------------------------------------
+
+  my $test_string = shift;
+
+
+  # [eDE] -> d
+  $test_string =~ s/[eDE]/d/;
+
+  if ($test_string =~ /d/) {
+
+    # 123d0   -> 123.0d0
+    if    ($test_string !~ /\./)     { $test_string =~ s/d/.0d/;  }
+
+    # 123.d0  -> 123.0d0
+    elsif ($test_string =~ /\.d/)    { $test_string =~ s/.d/.0d/; }
+  }
+  else {
+
+    # 123     -> 123.0d0
+    if    ($test_string !~ /\./)     { $test_string = $test_string . ".0d0"; }
+
+    else {
+
+      # 123.  -> 123.0d0
+      if  ($test_string =~ /^.*\.$/) { $test_string = $test_string . "0d0";  }
+
+      #  12.3 ->  12.3d0
+      else                           { $test_string = $test_string . "d0";   }
+    }
+  }
+ 
+  return ($test_string);
+}
+ 

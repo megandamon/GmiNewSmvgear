@@ -1,0 +1,234 @@
+\chapter[Making Changes]{Making Changes to the Code} \label{chap:changes}
+%
+This chapter briefly describes some factors users should take into account
+if they want to modify the code.
+
+\section{Coding Consideration}
+%
+Some coding conventions must be followed when making code changes:
+\begin{itemize}
+\item All real variables must be declared "real*8".
+\item All real numbers must have a "d" exponent even if "d0".
+\item Must use "\# include" for all include statements.
+\item Use only generic intrinsic function calls (for instance use MOD instead of AMOD).
+\item Do not use the real or float intrinsic functions: just assign integer variable to a
+      real*8 variable if need be and then proceed.
+\item Avoid using machine-specific calls.
+\item Use of appropriate F90 language features is encouraged (dynamic allocation, array
+      syntax, etc.).
+\item Use the physical constants and conversion factors defined in \\
+      Shared/GmiInclude/gmi\_phys\_constants.h.
+\item Use the time constants and conversion factors defined in \\
+      Shared/GmiInclude/gmi\_time\_constants.h.
+\end{itemize}
+
+\section{Making Changes in the Code} \label{sec:changes}
+%
+Before making any change in the code, it is important to understand
+its directory structure and the concept of components.
+The code has been reorganized and major components were isolated
+with the goals of making the code more readable, flexible,
+accessible, modular and easy to maintain.
+We grouped variables belonging to a given component into a derived
+type.
+The following derived types were created to classify and manipulate GMI variables:
+%
+\begin{description}
+\item[Advection:] Contains advection related variables
+\item[Chemistry:] Contains chemistry related variables
+\item[Convection:] Contains convection related variables
+\item[Deposition:] Contains deposition related variables
+\item[Diffusion:] Contains diffusion related variables
+\item[Emission:] Contains emission related variables
+\item[SpeciesConcentration:] Responsible for manipulating species concentration related variables.
+\end{description}
+%
+For each member variable (kept private and only directly accessible by the
+component it belongs to) of the derived type, we wrote routines (whenever necessary)
+to manipulate it: {\em Allocate} (to allocate the variable once), {\em Set} 
+(to set the value of the variable anywhere in the code), and {\em Get} 
+(to obtain the value of the variable anywhere in the code).
+It is important to note that the three routines are the only operations directly done
+on derived type member variables.
+
+For each component, we wrote three new interface routines to standardize the way
+components are handled:
+%
+\begin{description}
+\item[InitializeComponent:] called once to read resource file (only the section
+     corresponding to the component), do initial settings
+     and perform variable allocation.
+\item[RunComponent:] used to invoke the component for model time stepping.
+\item[FinalizeComponent:] called if necessary to deallocate variables.
+\end{description}
+%
+The above routines are the only ones accessible by the main program and
+they completely hide the legacy system.
+They have as arguments only derived types.
+The only way to have access to a member variable of a derived type is through the
+associated {\em Set} and {\em Get} routines.
+
+In addition to the components listed above, we created three other components
+to provide services to the seven main components.
+They are:
+\begin{description}
+\item[gmiClock:] Contains clock information necessary for the model to advance in time.
+\item[gmiGrid:] Contains grid-related data.
+\item[gmiDomain:] Contains subdomain information.
+\item[MetFields:] Responsible for updating all the meteorological related variables
+     (by reading from a file or deriving from existing variables), and passing them
+     to other components as needed.
+\item[Diagnostics:] Responsible for setting the necessary diagnostics flags and
+     passing the appropriate information to other components (that will do
+     proper allocation of diagnostics variables they own).
+\end{description}
+%
+\begin{example}
+We want to provide an example on how the componentization was used to drive
+the Chemistry component.
+We list the arguments of the three routine interface:
+\begin{verbatim}
+    InitializeChemistry(Chemistry, Diagnostics, gmiConfig, gmiGrid, gmiDomain)
+    RunChemistry       (Chemistry, Emission, MetFields, Diagnostics,
+                        SpeciesConcentration, gmiClock, gmiGrid, gmiDomain)
+    FinalizeChemistry  (Chemistry)
+\end{verbatim}
+Here, {\tt gmiConfig} is the the ESMF configure user file associated with the resource file.
+\end{example}
+%
+
+\vskip 0.6cm
+
+\noindent
+The code associated with the first set of derived types is located in the 
+{\em Components/} directory whereas the one for the second set is in the
+{\em Shared/} directory (providing support to major components).
+When making changes in the code, we need to identify where the modifications
+should occur.
+Assume that we want to add a new method for computing the tropopause pressure.
+The new routine should be added in the directory {\em Shared/GmiMetFields/}
+containing modules/routines manipulating metFields variables.
+
+\subsection{Adding a Variable to a Derived Type}
+%
+Each derived type defined in the code is part of a module.
+To add a new variable to a derived type, we need to do the following
+operations:
+\begin{enumerate}
+\item Define the variable
+\item Write a routine to allocate it (if an array)
+\item Write a routine to get its value (if needed outside the component the derived type belongs to)
+\item Write a routine to set its value (if updated outside the component the derived type belongs to)
+\item Deallocate the derive type (if an array)
+\end{enumerate}
+%
+As an example, assume that we want to output the overhead ozone column that is calculated 
+inside the photolysis package.
+The variable {\tt overheadO3col} needs to be created.
+Since it will only be updated in the Chemistry component (where the Photolysis is located),
+the variable will be part of the Chemistry component and should be a member of the Chemistry
+derived type.
+In addition, {\tt overheadO3col} will be visible outside the component.
+The following will be added in the file:
+%
+\begin{verbatim}
+    gmi_gsfc/Components/GmiChemistry/chemistryMethod/GmiChemistryMethod_mod.F90
+\end{verbatim}
+%
+\begin{verbatim}
+  real*8, pointer     :: overheadO3col(:,:,:)   => null()
+
+  subroutine Allocate_overheadO3col (self, i1, i2, ju1, j2, k1, k2)
+    integer           , intent(in   )  :: i1, i2, ju1, j2, k1, k2
+    type (t_Chemistry), intent(inout)  :: self
+    Allocate(self%overheadO3col(i1:i2, ju1:j2, k1:k2))
+    self%overheadO3col = 0.0d0
+    return
+  end subroutine Allocate_overheadO3col
+
+  subroutine Set_overheadO3col (self, overheadO3col)
+    real*8          , intent(in)  :: overheadO3col(:,:,:)
+    type (t_Chemistry), intent(inout)   :: self
+    self%overheadO3col(:,:,:) = overheadO3col(:,:,:)
+    return
+  end subroutine Set_overheadO3col
+
+  subroutine Get_overheadO3col (self, overheadO3col)
+    real*8          , intent(out)  :: overheadO3col(:,:,:)
+    type (t_Chemistry), intent(in)   :: self
+    overheadO3col(:,:,:) = self%overheadO3col(:,:,:)
+    return
+  end subroutine Get_overheadO3col
+\end{verbatim}
+
+\subsection{Adding Chemical Mechanisms}
+%
+Currently, the GMI code has six chemical mechanisms:
+\begin{enumerate}
+\item {\em aerosol}
+\item {\em micro\_aerosol}
+\item {\em gocart\_aerosol}
+\item {\em stratosphere}
+\item {\em strat\_trop} (combined stratosphere/troposphere)
+\item {\em troposphere}
+\end{enumerate}
+%
+The code portion for each mechanism is contained in its own subdirectory 
+(located at {\em Components/GmiChemistry/mechanisms/}) having the name of the corresponding 
+mechanism.
+It is organized into two subdirectories (see Chapter \ref{chap:structure}):
+{\em include\_setkin/} and {\em setkin/}. 
+
+If you want to add another chemical mechanism, just create a new subdirectory
+from {\em Components/GmiChemistry/mechanisms/} and move the setkin files there.
+To compile the code, follow the compilation procedures as described in Section
+\ref{sec:compilation}.
+
+The selection of a particular chemical mechanism is done through the 
+environment variable {\em CHEMCASE} in the file {\em cshrc.gmi} 
+(see Chapter \ref{chap:installation}).
+
+\begin{remark}
+It is important to note that if you make changes specific to a particular
+chemical mechanism (i.e., outside setkin files), use the variable 
+``chem\_mecha'' to delimit your changes.
+\end{remark}
+
+\subsection{netCDF Output Files}
+We modified the process of producing netCDF output files.
+All the operations needed to manipulate a file are now included in a unique
+Fortran module.
+In addition, the interface routines (initialize, control and finalize)
+have standard interfaces and should not be changed.
+If we want to add another diagnostics variable to a netCDF output file,
+we may only have to make changes in the module: declare the variable,
+allocate it, update its value every time step, communicate its value to
+the root processor, write it out by the root processor and deallocate 
+it.
+
+%
+%\section{The Make System}
+%%
+%\begin{description}
+%\item[Makefile]: a template for Makefile.
+%%\item[mkmf]: a command line that uses Makefile.cpp and the system files to
+%%             produce the Makefile.
+%%\item[make]: to compile the code (use regular make, not GNU make).
+%%\item[make link]: for linking.
+%\item[gmake clean]: to remove all the object files created at compilation.
+%\item[gmake distclean]: to remove all temporary files and all the object files created at compilation.
+%\end{description}
+%
+%%
+%\section{Debugging the Code}
+%If you want to run the code in a debug mode,
+%\begin{itemize}
+%\item Edit the file {\em Config/compiler.mk} and set the compilation options to "-g".
+%\item Edit the file {\em Config/gem\_option.h} and set the parameter 
+%      {\em Debug\_Option} to 1 and the other two options (optimization
+%      and profiling) to 0.
+%\item Go to the main directory
+%\item Type: {\tt gmake all} 
+%\item Submit the executable using a debugger such as TotalView
+%%\end{itemize}
+%

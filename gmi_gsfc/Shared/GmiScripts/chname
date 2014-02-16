@@ -1,0 +1,38 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   chname
+#
+# DESCRIPTION
+#   This script searches for all file names in the current directory 
+#   containing "search_string" and replaces the first instance of 
+#   "search_string" with "replace_string".
+#
+#   Usage:  chname  search_string  replace_string
+#
+#=============================================================================
+#
+
+
+if ($#argv != 2) then
+
+  echo ""
+  echo "Usage:  $0  search_string  replace_string"
+  echo ""
+
+else
+
+  foreach f (*$argv[1]*)
+    mv $f `echo $f | sed -e s/$argv[1]/$argv[2]/`
+  end
+
+endif
+
+exit
+

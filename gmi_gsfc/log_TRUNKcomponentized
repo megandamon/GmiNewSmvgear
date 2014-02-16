@@ -1,0 +1,608 @@
+------------------------------------------------------------------------
+This file is to record the changes made to componentized the GMI code.
+We started with the TRUNK of the GMI code 
+
+	TRUNKcomponentizedROOT
+
+and created a branch named
+
+	TRUNKcomponentized
+
+The componentized work will be done on the branch only one component
+at the time. Before we start the work on any component, we need to
+tag the branch
+
+	beforeTRUNKcomponentized_CompName
+
+After the work on the component is done (assuming that the tests were
+successful), the branch will be tagged
+
+
+	beforeTRUNKcomponentized_CompName
+
+Before the merge of the TRUNK and the branch, we tag the TRUNK
+
+	beforeTRUNKcomponentizedROOT_CompName
+
+When the merge is completed, the new tag of the TRUNK becomes
+
+	TRUNKcomponentizedROOT_CompName
+
+We move then to the next component.
+
+April 5, 2006 - Jules Kouatchou
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+TAG: bTRUNKcomponentizedROOT_DiffDeposV1
+     Captures all the changes made on the trunk before the merge
+     to obtain the next tag.
+------------------------------------------------------------------------
+TAG: aTRUNKcomponentizedROOT_DiffDeposV1
+
+In this version of the code, we provide to the Diffusion (Update_Diffu)
+and the Deposition (Update_Drydep, Update_Wetdep, and Update_simpledep)
+operator control routines all the required GMI variables as arguments.
+We completely removed GMI include files but kept the one coming from
+the setkin files and the ones dealing with physical and time constants.
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+TAG: bTRUNKcomponentizedROOT_CovecEmissV1
+     Captures all the changes made on the trunk before the merge
+     to obtain the next tag.
+------------------------------------------------------------------------
+TAG: aTRUNKcomponentizedROOT_CovecEmissV1
+
+In this version of the code, we provide to the Convection (Update_Convec)
+and the Emission (Update_Emiss) operator control routines all the required 
+GMI variables as arguments.
+We completely removed GMI include files but kept the one coming from
+the setkin files and the ones dealing with physical and time constants.
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+TAG: bTRUNKcomponentizedROOT_ChemistryV2
+     Captures all the changes made on the trunk before the merge
+     to obtain the next tag.
+------------------------------------------------------------------------
+TAG: aTRUNKcomponentizedROOT_ChemistryV2
+
+In this version of the code, we provide to the Chemistry (Update_Chem)
+operator control routine all the required GMI variables as arguments.
+The same was done for supporting routines for Gmi_Step.
+We completely removed GMI include files but kept the one coming from
+the setkin files and the ones dealing with physical and time constants.
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+TAG: bTRUNKcomponentizedROOT_AdvectionV1
+     Captures all the changes made on the trunk before the merge
+     to obtain the next tag.
+------------------------------------------------------------------------
+TAG: aTRUNKcomponentizedROOT_AdvectionV1
+
+In this version of the code, we provide to the Advection (Update_Advec)
+operator control routine all the required GMI variables as arguments.
+This was also done for routines in the in_out/ and comm/ directories.
+We completely removed GMI include files but kept the one coming from
+the setkin files and the ones dealing with physical and time constants.
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+TAG: bTRUNKcomponentizedROOT_ChemistryV3
+     Captures all the changes made on the trunk before the merge
+     to obtain the next tag.
+------------------------------------------------------------------------
+TAG: aTRUNKcomponentizedROOT_ChemistryV3
+
+In this version of the code, we fix problems (missing or misplaced
+arguments) happening when the "aerosol" chemical mechanism
+is selected.
+------------------------------------------------------------------------
+TAG: TRUNKcomponentizedROOT_ChemistryV4
+
+In this version of the code, we fix problems (missing arguments) in the
+Gas Phase Chemistry solver. The missing arguments did not prevent the
+code to compile and run properly. There could have been "wrong" diagnostics
+outputs only for the variables yda, qqkda and qqjda.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Same_as_bTRUNKcomponentizedROOT_NewDirectory
+
+This tag is the same as bTRUNKcomponentizedROOT_NewDirectory with slight
+modifications in
+
+	gmi_met.F90      (replace "gwet" to be read in by "gwet1")
+	gmi_namelist.F90 (set the default value of gwet_opt to 0)
+	convec_ncar.F90  (isolated the routine Conv_Tran)
+	convec_gmao.F90  (used the isolated routine Conv_Tran)
+	qk_update.F90    (isolated the routine Update_Qk)
+	qj_update.F90    (isolated the routine Update_Qk)
+	chem_update.F90  (used the isolated the routines Update_Qj and Update_Qk)
+	gmi_step.F90     (used the new Update_chem)
+	micro_sulfur/sulfchem_solver.F90 (added missing variables in the argumenent list)
+
+This tag was created because the code in the new directory structure did not perform as
+expected for the tropospheric chemichal mechanism. We had to reverse some of the changes.
+The new directory structure is not implemented here.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: TRUNKcomponentizedROOT_NewDirectory
+
+In this version of the code, files associated to the operators:
+
+    chemistry, advection, emission, deposition, convection, and
+    diffusion
+
+were moved to the new directory structure.
+    
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ImplementationGmiTimeControl
+
+In this version of the code, we created a Fortran module (GmiTimeControl_mod)
+containing:
+
+    - a new derived type, gmiClock, which member variables are used to advance
+      the code in time
+    - routines/functions to manipulate the member variables
+    - renamed routines/functions (with respect to the file gmi_time_utils.F90)
+
+The new derived type was implemented in the code.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Removed_ai_bi_pt_FromEmission
+
+In this version of the code, we removed the following variables
+
+    ai, bi, pt, pctm1, humidity
+
+from the Emission operator.
+
+We wrote a new routine, CalcHeightSigmaLevel, to compute the 
+height of full and half-sigma levels above ground level (variable "za")
+used in Llnl emission. The routine is called in the GMI time stepping
+routine.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Removed_ai_bi_pt_FromConvection
+
+In this version of the code, we removed the following variables
+
+    ai, bi, pt, pctm2
+
+from the Convection operator.
+
+We wrote a new routine, CalcConvection_bmass, to compute the 
+variable "bmass" used in DAO convection. The routine is called in the 
+GMI time stepping routine.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Removed_ai_bi_am_bm_pt_FromDryDeposition
+
+In this version of the code, we removed the following variables
+
+    ai, bi, am, bm, pt, pctm2, humidity, kel
+
+from the Dry Deposition operator.
+
+We wrote a new routine, CalcDryDepBoxHeight, to compute the
+variables "BoxHeightCenter" and "BoxHeightEdge" used in dry deposition. 
+The routine is called in the GMI time stepping routine.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComputedValues_CloudFraction_CloudOpticalDepth
+
+In this version of the code, we wrote routines (CalcCloudFraction,
+CalcCloudOpticalDepth) to compute the cloud fraction (cloudFraction)
+and the cloud optical depth (tau_cloud). They are no more computed
+inside any component and are passed as argument of components
+(chemistry, emission, deposition) that need them.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: const_to_concentrationPointer3Darrays-inDeposition
+
+We substituted the "const" array (4D) with "concentration" that is a pointer of 3D arrays:
+Here is the correspondance:
+
+                  concentration(ic)%pArray3D(i,j,k) = const(i,j,k,ic)
+
+This was done for the deposition operator.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: GOCARTroutinesAddedNewDirectory_Step1
+
+In this version of the code, we initiated the first implementation GOCART 
+routines in the new directory structure. To use this implementation, the 
+user needs to set the namelist variables:
+
+	emiss_dust_opt = 2
+	emiss_aero_opt = 2
+
+This implementation cannot be used yet. Other areas (setkin files for aerosol)
+of the code have to be modified first.
+
+We also renamed the variable cloudFraction to fracCloudCover (fractional
+cloud cover) and the routine CalcCloudFraction to CalcFractionalCloudCover.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: NewRoutine_for_GridBoxHeight
+
+Rewrote the routine computing the grid box height and named it CalcGridBoxHeight.
+The new routine does not use "ai, bi, pt" but instead the 3d pressure
+at the edge. 
+
+Now the grid box height is an argument of the emission routine and it 
+replaces the variable "za".
+
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: MoistureComputedOutsideDeposition
+
+Wrote a routine to compute the moisture changes outside the wet deposition
+operator. The routine is called just before the call of the wet deposition
+control routine. The MetFields variable moistq is now only input to the
+wet deposition control routine.
+
+In addition, we modified the control routine for Advection to make sure that
+the MetFields variables xmass and ymass are no more modified.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Removed_ai_bi_am_bm_pt_FromChemistry
+
+In this version of the code, we removed the following variables
+
+    ai, bi, am, bm, pt
+
+from the Chemistry operator.
+In the photolysis package, we now use the variables
+
+    press3c, press3e
+
+instead of 
+
+    ai, bi, am, bm, pt
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: CloudVariablesPassed_to_Chemistry
+
+We passed to the Chemistry operator the total cloud fraction
+(totalCloudFrcation) and the fractional cloud cover (fracCloudCover).
+
+	- totalCloudFrcation is needed for chem_opt=7 (quadchem chemistry)
+	- fracCloudCover is employed in the photolysis package when
+	  phot_opt=4 or phot_opt=5
+
+It is important to note that max_cloud and ran_cloud (used to compute the
+above quantities) are still passed to the chemistry operator. The reason
+is that they are employed to calculate the optical depths inside the
+AerDust module.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: RunRoutines_for_DepositionChemistryEmission
+
+Wrote the run routines for Dry Deposition, Wet Deposition, Simple Deposition,
+Emission, and Chemistry. They are part of new modules.
+The arguments of the routines are still GMI regular variables.
+The next step is to create derived types.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: GOCARTroutinesAddedNewDirectory_Step2
+
+In this version of the code, we finished the implementation of GOCART
+routines in the new directory structure. We created a new chemical
+mechanism labeled
+
+		gocart_aerosol
+
+A new include file, gocart_aerosol.h was created (similar to gmi_aerosol.h)
+and some pre-processing directives were included to differenciate the
+"gocart_aerosol" and "aerosol" mechanisms.
+
+The changes here were made on top of what was done in the version of the
+code with tag
+
+	GOCARTroutinesAddedNewDirectory_Step1
+
+To use this implementation, the user needs to set the environment variable
+CHEMCASE to gocart_aerosol and the namelist variables:
+
+        emiss_dust_opt = 2
+        emiss_aero_opt = 2
+
+It is important to note that this implementation has a fifth dust bin.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: const_to_concentrationPointer3Darrays-inEmissionDiffusionConvection
+
+We substituted the "const" array (4D) with "concentration" that is a pointer of 3D arrays:
+Here is the correspondance:
+
+                  concentration(ic)%pArray3D(i,j,k) = const(i,j,k,ic)
+
+This was done for the Emission, Convection and Diffusion operators.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedEmission_Step1
+
+We created a derived type which member variables are varaibles owned
+by the Emission operator. Routines (Allocate, Get, and Set) to manipulate
+member variables were written.
+
+In addition, we implemented the Initializate, Run and Finalize routines
+for the Emission component.
+In the current version, we left out for emission related variables
+(emiss_dust, emiss_nox, emiss_isop, emiss_monot). They are part
+of the derived type but for the time being are in the interface of the
+run routine. We will investigate why their full inclusion in the
+componentized code is creating problems.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedEmission_Step2
+
+In this version of the code, the variables emiss_dust, emiss_nox,
+emiss_isop, emiss_monot are only manipulated through the Emission
+derived type.
+
+In addition, we moved the GOCART routines previously called with
+Gmi_Step into the Emission component.
+
+It is important to note that the reading of the namelist file
+is done by all the worker processors at this time. It will
+be changed later.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedEmission_Step3
+
+The readings of the emission related files (apart from GOCART input files)
+are now done in the routine InitializeEmission and no more in the legacy
+code.
+Emission related variables are no longer set outside the Emission component.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedDeposition_Step1
+
+We created a derived type which member variables are varaibles owned
+by the Deposition operator. Routines to manipulate member variables were written.
+
+We implemented the Initialize, Run (for Dry Deposition, Wet Deposition and 
+Simple Deposition) and Finalize routines for the Deposition component.
+
+At this time, we did not pass the Deposition derived type to the Convection 
+(for the member variable do_wetdep) and Emission (for the member
+variable do_drydep) operators.
+
+The namelist file is read by all the worker processors.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedEmission_Step4
+
+We noticed that four emission related variables were used in the Dry Deposition
+component. We added them in the Emission derived type and passed it as argument
+of the Dry Deposition driver.
+
+We also wrote a new Fortran module, GmiFixedConstituent_mod, to remove the
+dependence of the function Is_Fixed_Const from GMI common blocks. The function
+now has a new name, IsFixedConstituent, and has the same argument list.
+
+It is important to note that the Deposition operator is fully componentized.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedEmission_Step5
+
+We wrote several fortran modules to make sure that all the routines called within
+the Emission component do no come from the legacy code.
+
+We also started writing a standalone program to independently test the Emission 
+component.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedEmission_Step6
+
+We wrote several fortran modules to make sure that all the routines 
+called withi n the Emission component do not come from the legacy code.
+We finished writing a standalone program to independently test the Emission
+component.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedConvection_Step1
+
+We created a derived type which member variables are variables owned
+by the Convection operator. Routines to manipulate member variables were written.
+
+We implemented the Initialize, Run and Finalize routines for the Convection component.
+
+The namelist file is read by all the worker processors.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedDiffusion_Step1
+
+We created a derived type which member variables are variables owned
+by the Diffusion operator. Routines to manipulate member variables were written.
+
+We implemented the Initialize, Run and Finalize routines for the Diffusion component.
+
+The namelist file is read by all the worker processors.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedDiffusion_Step2
+
+Some files were missing in the previous tag.
+
+We substituted the "const" array (4D) with "concentration" that is a pointer of 3D arrays:
+Here is the correspondance:
+
+                  concentration(ic)%pArray3D(i,j,k) = const(i,j,k,ic)
+
+This was done for the Chemistry.
+
+There are still issues with the routines Update_Smv2chem and Update_Sulfchem
+where "concentration" has to be copied to "const" and "const" to "concentration".
+The process is very expensive. We will provide an alternative later.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedDiffusion_Step3
+
+This tag is similar to ComponentizedDiffusion_Step2.
+We introduced minor changes to make the code complie on palm.
+We also implemented fastJX53c (not stable yet). The implementation
+is fully componentized (Initi, Run and Finalize routines were written).
+
+It is important to note that in this version of the code,
+we bypass the changes made to allow the code to work on
+the MAC (tags NAG_OSX_PORT and XLF_PLUS_NAG_OSX_B)
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: EmissionIO_Step1
+
+We moved the reading of the emission related files (calls of the routines
+Read_Emiss_Data1 and Read_Emiss_Data2) from the routine Update_Emission to 
+the routine RunEmission. This is the initial step for the implementation
+of an IO component in order to avoid the manipulation of files by any GMI
+component.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Removed-max_cloud-ran_cloud-fromChemistry
+
+In this version of the code, we removed the variables max_cloud and
+ran_cloud from the Chemistry operator. They were used to update the
+diagnostics variable OptDepth. A routine (DiagCloudOpticalDepth) was
+written to carry out the update. The routine is called in the GMI
+time stepping routine.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: CosSolarZenithAngle-in-DepositionEmission
+
+We wrote a routine for computing the cosines of the solar zenith angle.
+The cosines are passed as argument of the Emission and Deposition
+components.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: DerivedTypes-for-Emission
+
+We subdivided the Emission derived type into two sub derived types:
+
+   - t_EmissInternal : for Emission internal related variables
+   - t_EmissExternal : for Emission external related variables
+
+This was done to facilitate the implementation of an ESMF wrapper
+for the Emission component.
+
+We also modified the standalone code for Emission and wrote a
+standalone program for Diffusion.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Pointer3Darrays-for-emiss
+
+In this version of the code, we removed the fifth dimension of the array
+"emiss" and allowed the code to read in the emission input file once every
+month.
+
+The new "emiss" array (4D) was changed into a pointer of 3D arrays.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: InitializeRoutines-for-all-FastJs
+
+In this version of the code, we wrote Initialize routines for
+Fastj, FastJX and FastJX53b. The routines (together with the one for
+FastJX53c previously written) are called in the Initialize routine of 
+the Chemistry component.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedAerDustModule
+
+We modified the code so that
+
+   - the AerDust module does not need any more to read the reading of
+     the photolysis cross section file,
+   - diagnostics (column mass) for the AerDust are no longer done inside
+     chemistry.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: ComponentizedAerDustModule_2
+
+In the previous version, we deleted by mistake one file.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: Pointer3Darrays-for-emiss_2
+
+In this version of the code, we attempted to fix a memory leak problem caused
+by the introduction of the pointer of 3D arrays for emission.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+TAG: FastJX53c_Implemented
+
+In this version of the code, we reimplemented FastJX53.c by just designing
+the interface to the GMI code. We wrote an Initialize and Run routines and
+kept the organization of FastJX53c (in the directory fastJX53c_ref). 
+

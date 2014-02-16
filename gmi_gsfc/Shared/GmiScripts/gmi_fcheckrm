@@ -1,0 +1,412 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   gmi_fcheckrm
+#
+# DESCRIPTION
+#   This script can be used after "gmi_fcheck" is run on the GMI code
+#   to strip out Flint messages that are of no consequence.  Gmi_fcheckrm
+#   uses gmi_fcheck.out as its input file, and produces a new file called
+#   gmi_fcheckrm.out.
+#
+# SUBROUTINES
+#   do_first_pass
+#   do_second_pass
+#   do_third_pass
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use English;
+use File::Copy;
+
+
+my $script_name  =  "PROGRAM_NAME";
+   $script_name  =~ s/.*\///g;
+
+my $inf_name     = "gmi_fcheck.out";
+my $outf_name    = "gmi_fcheckrm.out";
+
+my $tmpf_file    = "/tmp/jrttmpf.$PID";
+my $tmps_file    = "/tmp/jrttmps.$PID";
+my $tmpt_file    = "/tmp/jrttmpt.$PID";
+
+
+open (INFIL, "< $inf_name") or
+  die "\nIn $script_name, cannot open file $inf_name:\n  $OS_ERROR\n\n";
+my @lines = <INFIL>;
+close (INFIL);
+
+open (OUTFIL, "> $outf_name");
+
+if ($#lines < 2) {
+  copy ("$inf_name", "$outf_name");
+}
+else {
+# ==============
+  do_first_pass  ();
+  do_second_pass ();
+  do_third_pass  ();
+# ==============
+
+  copy ($tmpt_file, $outf_name);
+
+  unlink ("$tmpf_file") or
+    die "\nIn $script_name, cannot delete file $tmpf_file:\n  $OS_ERROR\n\n";
+  unlink ("$tmps_file") or
+    die "\nIn $script_name, cannot delete file $tmps_file:\n  $OS_ERROR\n\n";
+  unlink ("$tmpt_file") or
+    die "\nIn $script_name, cannot delete file $tmpt_file:\n  $OS_ERROR\n\n";
+}
+
+close (OUTFIL);
+
+
+exit 0;
+
+
+####################################
+# End of main; subroutines follow. #
+####################################
+
+
+#----------------
+sub do_first_pass {
+#----------------
+
+  #-------------------------------------------------------
+  # Remove weird blank lines created by other first pass.
+  #-------------------------------------------------------
+
+  my $line;
+
+
+  open (INFIL,  "< $inf_name") or
+    die "\nIn do_first_pass, cannot open file $inf_name:\n  $OS_ERROR\n\n";
+  my @lines     = <INFIL>;
+  my $num_lines = $#lines;
+  close (INFIL);
+
+
+  open (INFIL,  "< $inf_name") or
+    die "\nIn do_first_pass, cannot open file $inf_name:\n  $OS_ERROR\n\n";
+
+  open (OUTFIL, "> $tmpf_file");
+
+
+  while ($INPUT_LINE_NUMBER <= $num_lines) {
+
+    my $line = <INFIL>;
+
+    if ($line !~ /^                    $/) {
+      print OUTFIL "$line";
+    }
+  }
+
+  close (INFIL);
+  close (OUTFIL);
+}
+
+
+#-----------------
+sub do_second_pass {
+#-----------------
+
+  my $found;
+  my $var_name;
+
+
+  #------------------------------------------------------------------
+  # For global removal of specified irrelevant messages of the type:
+  #   "USAGE FYI #124- dummy argument @var124 is unused.
+  #------------------------------------------------------------------
+
+  my $msg124 = "USAGE FYI #124-";
+
+  my @var124 = qw(AAA
+                  AD
+                  BRANCH
+                  BUFAPP
+                  CHEMINTV
+                  KST             KTR
+                  LAST_TIME
+                  LPX
+                  LWC             LWCCOL
+                  MSGBUF
+                  NUM_TIME_STEPS
+                  PACKAGE_NAME1   PACKAGE_NAME2
+                  PBOX            PCOL
+                  PRESSURE
+                  QJGMI           QKGMI
+                  RAN_CLOUD
+                  SAD_NAT         SAD_SOOT
+                  SPARR
+                  T_COUPLE
+                  TEMP
+                  TROPP);
+
+
+  #------------------------------------------------------------------
+  # For global removal of specified irrelevant messages of the type:
+  #   "USAGE WARNING #127- local variable @var127 is set but never
+  #    referenced."
+  #------------------------------------------------------------------
+
+  my $msg127 = "USAGE WARNING #127-";
+
+  my @var127 = qw(AGCM_ON
+                  AIRDEN
+                  CDUMMY          DDUMMY
+                  IDUMMY          MDUMMY
+                  YDUMMY
+                  CONST2          CONSTCOL
+                  CTM
+                  DAYS_SINCE0     WEEKS_SINCE0
+                  MONTHS_SINCE0
+                  DELP1
+                  DO_CELL_CHEM
+                  DT_MFF
+                  DUMLINE         DUMSEC
+                  IDUM_OFFSET     KDUM_OFFSET
+                  IDUMDAY
+                  IDUMYEAR        IDUMYR
+                  IERR
+                  MAX_BRY_ADJUST  MAX_CLY_ADJUST
+                  MAX_NOX_ADJUST
+                  NBLOCK
+                  NITROGEN	  OXYGEN
+                  OMODE
+                  QJGMI2          QKGMI2
+                  QQ2
+                  RDISTSQ
+                  SAD_ICE         SAD_NAT
+                  SAD_SOOT        SAD_STS
+                  SADCOL          SADERR
+                  SADWN
+                  SMV_FILNAM
+                  TMP_STRING
+                  VARID
+                  WATER
+                  WCLK
+                  WEEK_OF_YEAR);
+
+
+  #------------------------------------------------------------------
+  # For global removal of specified irrelevant messages of the type:
+  #   "USAGE FYI #128- local variable @var128 declared but unused."
+  #------------------------------------------------------------------
+
+  my $msg128 = "USAGE FYI #128-";
+
+  my @var128 = qw(AEROSOL
+                  CGRP_NAM
+                  DELH_298_OVER_R
+                  GROUP_ADJUST     GROUP_FACTOR
+                  HSTAR
+                  LDYNVAR
+                  LQJCHEM          LQKCHEM
+                  MAX_BRY_ADJUST   MAX_CLY_ADJUST
+                  MAX_NOX_ADJUST
+                  MPI_BOTTOM_PTR
+                  OXIDIZE
+                  PH
+                  QQ2              QQGRP
+                  RETENTION_EFF
+                  SET_VEL
+                  SGRP_ELEM_MAP
+                  SGRP_FAC
+                  SURF_BC_MAP);
+
+
+  #---------------------------------------------------------------------------
+  # For global removal of specified irrelevant messages of the type:
+  #   "INTERFACE WARNING #826- common block /GMIPLA_R1/ member @var826
+  #                            alloc. with diff. array bounds (compared to
+  #                            initial use in routine GMI_ALLOC_BIG_ARRAYS)."
+  #---------------------------------------------------------------------------
+
+  my $msg826 = "INTERFACE WARNING #826-";
+
+  my @var826 = qw(PRS_PHOT       SZA_PHOT
+                  COL_O3
+                  CROSS_SECTION
+                  NO_QJ          O2_QJ
+                  RAD_SOURCE
+                  O3_CLIM        O3_CLIM_PRS);
+
+
+  open (INFIL,  "< $tmpf_file") or
+    die "\nIn do_second_pass, cannot open file $tmpf_file:\n  $OS_ERROR\n\n";
+  my @lines     = <INFIL>;
+  my $num_lines = $#lines;
+  close (INFIL);
+
+  open (INFIL,  "< $tmpf_file") or
+    die "\nIn do_second_pass, cannot open file $tmpf_file:\n  $OS_ERROR\n\n";
+  @lines = ();
+
+  open (OUTFIL, "> $tmps_file");
+
+
+  $lines[0] = <INFIL>;
+  $lines[1] = <INFIL>;
+  $lines[2] = <INFIL>;
+
+
+  while ($INPUT_LINE_NUMBER <= ($num_lines - 2)) {
+
+    $found = 0;
+
+    if ($lines[1] =~ "$msg124") {
+      X124: foreach $var_name (@var124) {
+        if ($lines[1] =~ "$var_name") {
+          $found = 1;
+          #========
+          last X124;
+          #========
+        }
+      }
+    }
+
+    if ((! $found) && ($lines[1] =~ "$msg127")) {
+      X127: foreach $var_name (@var127) {
+        if ($lines[1] =~ "$var_name") {
+          $found = 1;
+          #========
+          last X127;
+          #========
+        }
+      }
+    }
+
+    if ((! $found) && ($lines[1] =~ "$msg128")) {
+      X128: foreach $var_name (@var128) {
+        if ($lines[1] =~ "$var_name") {
+          $found = 1;
+          #========
+          last X128;
+          #========
+        }
+      }
+    }
+
+    if ((! $found) && ($lines[1] =~ "$msg826")) {
+      X826: foreach $var_name (@var826) {
+        if ($lines[1] =~ "$var_name") {
+          $found = 1;
+          <INFIL>;
+          <INFIL>;
+          #========
+          last X826;
+          #========
+        }
+      }
+    }
+
+
+    if ($found) {
+      $lines[0] = <INFIL>;
+      $lines[1] = <INFIL>;
+      $lines[2] = <INFIL>;
+    }
+
+    else {
+      print OUTFIL "$lines[0]";
+      $lines[0] = $lines[1];
+      $lines[1] = $lines[2];
+      $lines[2] = <INFIL>;
+    }
+  }
+
+  if (! $found) {
+    print OUTFIL "$lines[0]";
+    print OUTFIL "$lines[1]";
+    print OUTFIL "$lines[2]";
+    print OUTFIL <INFIL>;
+    print OUTFIL <INFIL>;
+  }
+
+  close (INFIL);
+  close (OUTFIL);
+}
+
+
+#----------------
+sub do_third_pass {
+#----------------
+
+  #------------------------------------------------------
+  # Remove any extraneous lines created by other passes.
+  #------------------------------------------------------
+
+  my $found;
+  my @inrec;
+  my $var_name;
+
+
+  open (INFIL,  "< $tmps_file") or
+    die "\nIn do_third_pass, cannot open file $tmps_file:\n  $OS_ERROR\n\n";
+  my @lines     = <INFIL>;
+  my $num_lines = $#lines;
+  close (INFIL);
+
+
+  open (INFIL,  "< $tmps_file") or
+    die "\nIn do_third_pass, cannot open file $tmps_file:\n  $OS_ERROR\n\n";
+  @lines = ();
+
+  open (OUTFIL, "> $tmpt_file");
+
+
+  $lines[0] = <INFIL>;
+  $lines[1] = <INFIL>;
+  $lines[2] = <INFIL>;
+  $lines[3] = <INFIL>;
+
+
+  while ($INPUT_LINE_NUMBER <= ($num_lines - 3)) {
+
+    $found = 0;
+
+    if (($lines[0] =~ /\*\*\*\*\*/) && ($lines[3] =~ /\*\*\*\*\*/)) {
+      $found = 1;
+    }
+
+    if ($found) {
+      $lines[0] = $lines[3];
+      $lines[1] = <INFIL>;
+      $lines[2] = <INFIL>;
+      $lines[3] = <INFIL>;
+    }
+
+    else {
+      print OUTFIL "$lines[0]";
+      $lines[0] = $lines[1];
+      $lines[1] = $lines[2];
+      $lines[2] = $lines[3];
+      $lines[3] = <INFIL>;
+    }
+  }
+
+  if (! $found) {
+    print OUTFIL "$lines[0]";
+    print OUTFIL "$lines[1]";
+    print OUTFIL "$lines[2]";
+    print OUTFIL "$lines[3]";
+    print OUTFIL <INFIL>;
+    print OUTFIL <INFIL>;
+    print OUTFIL <INFIL>;
+  }
+
+  close (INFIL);
+  close (OUTFIL);
+}
+

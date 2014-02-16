@@ -1,0 +1,23 @@
+NX: 2
+NY: 2
+IM: 72
+JM: 46
+LM: 72
+
+ROOT_RC_FILE: FVadvcore_GridComp.rc
+HISTORY_CONFIG: HISTORY.rc
+
+
+BEG_YY: 1991
+BEG_MM: 03
+BEG_DD: 01
+
+BEG_H: 0
+
+END_YY: 1991
+END_MM: 03
+END_DD: 02
+
+END_H: 0
+
+RUN_DT:   1800

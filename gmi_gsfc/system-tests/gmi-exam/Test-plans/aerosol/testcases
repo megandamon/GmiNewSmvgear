@@ -1,0 +1,44 @@
+#_______________________________________________________________________________
+#
+#  testcases :  Input data defining the GMI tests that gmi-exam-driver will run.
+#_______________________________________________________________________________
+#
+#  This input file defines the GMI "problem_name" for each test case that the
+#  suite of "gmi-exam" test programs will run for a given chemical mechanism.
+#
+#  The "gmi-exam" code uses the names specified here to locate other input files
+#  that further control the options that will be applied to each automated test.
+#
+#  Specify one or more chemistry types, one per line, in this file 
+#  with no leading or trailing whitespace characters on the input lines.
+#
+#  This simple design was used to quickly develop a set of programs that
+#  will automatically build GMI code and verifying its validity by running a
+#  series of standard tests and comparing their output to the expected results.
+#
+#  The programs that read "input options and definitions" such as those
+#  seen below are designed to ignore any line that begins (IN COLUMN 1) with the
+#  symbol commonly referred to as a pound sign, number sign, or crosshatch (#).
+#
+#  All other lines that do not begin with the # character are considered
+#  to be input definitions that will control the test runs, and in this case,
+#  are simply the names that will be used to locate other input files in the
+#  "Test-plans" directory, and to locate the files in the Namelist directory
+#  which will be needed by the "gem" executable for each test run.
+#_______________________________________________________________________________
+#
+#  This was designed by Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#_______________________________________________________________________________
+#
+#  Modification History:
+#
+#  11/27/2005  W. Hoff            Original
+#_______________________________________________________________________________
+#
+#  Specify the problem names to be used when building/running test scripts:
+#
+aero_dao
+aero_fvgcm
+aero_giss
+#
+#_______________________________________________________________________________

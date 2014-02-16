@@ -1,0 +1,77 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   line_count_gmi
+#
+# DESCRIPTION
+#   This script does a variety of line counts on the Gmimod source code.
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use English;
+use Env;
+use File::Find;
+
+
+my $script_name    = "line_count_gmi";
+
+my $comment_lines  = 0;
+my $nonblank_lines = 0;
+my $total_lines    = 0;
+
+
+#===
+find (\&wanted, "$ENV{GMIHOME}");
+#===
+
+
+#---------
+sub wanted {
+#---------
+
+  my $file_name = "$File::Find::name";
+  my $line;
+
+
+  if ($file_name =~ /^.*\.[cF90h]$/) {
+#  if ($file_name =~ /^.*\.[Fh]$/) {
+
+    open (INFIL,  "< $file_name") or
+      die "\nIn $script_name, cannot open file $file_name:\n  $OS_ERROR\n\n";
+    my @lines = <INFIL>;
+    close (INFIL);
+
+    $total_lines = $total_lines + ($#lines + 1);
+
+    foreach $line (@lines) {
+      if ($line =~ /./)     { $nonblank_lines = $nonblank_lines + 1; }
+      if ($line =~ /^[!]/) { $comment_lines  = $comment_lines  + 1; }
+    }
+  }
+}
+
+print "\ngmi_gsfc =>\n";
+
+if ($total_lines < 100000) {
+  print "\n  Total   lines:   ", $total_lines, "\n";
+}
+else {
+  print "\n  Total   lines:  ",  $total_lines, "\n";
+}
+
+print "\n  Code    lines:   ", ($nonblank_lines-$comment_lines), "\n";
+print "\n  Comment lines:   ", $comment_lines, "\n";
+print "\n  Blank   lines:   ", ($total_lines-$nonblank_lines),   "\n\n";
+
+
+exit 0;
+

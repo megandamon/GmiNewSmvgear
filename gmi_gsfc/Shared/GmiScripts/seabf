@@ -1,0 +1,45 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# $Id: seabf,v 1.3 2013-07-31 14:57:20 ssteenro Exp $
+#
+# CODE DEVELOPER
+#   John Tannahill , LLNL     , jrt@llnl.gov
+#   Jules Kouatchou, NASA/GSFC, Jules.Kouatchou-1@nasa.gov
+#
+# FILE
+#   seabf
+#
+# DESCRIPTION
+#   This script searches through the ".F90" source files for a
+#   particular string (case insensitive).  Output comes to the screen
+#   unless an optional second file_name argument is provided.
+#
+#   Usage:  seabf search_string [file_name]
+#
+#=============================================================================
+#
+
+@ err = 0
+
+if ($#argv == 1) then
+
+  (cd $GMIHOME; grep -i "$argv[1]"  */*.F90  */*/*.F90  */*/*/*.F90 */*/*/*/*.F90 */*/*/*/*/*.F90 Components/GmiChemistry/photolysis/*/*.code)
+
+else if ($#argv == 2) then
+
+  (cd $GMIHOME; grep -i "$argv[1]"  */*.F90  */*/*.F90  */*/*/*.F90 */*/*/*/*.F90 */*/*/*/*/*.F90 Components/GmiChemistry/photolysis/*/*.code) >> $argv[2]
+
+else
+
+  echo ""
+  echo "Usage:  $0 search_string [file_name]"
+  echo ""
+  @ err = 1
+
+endif
+
+
+exit $err
+

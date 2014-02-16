@@ -1,0 +1,80 @@
+#_______________________________________________________________________________
+#
+#  combo_reduced_fvgcm : Run options for GMI problem_name = combo_reduced_fvgcm
+#_______________________________________________________________________________
+#
+#  This input file was created from a template that uses a specific format.
+#
+#  It is used by one of a series of scripts that automatically build and execute
+#  standardized test cases for the Global Modeling Initiative (GMI) software.
+#
+#  Each test case has a unique "problem name", and uses ASCII I/O files that
+#  incorporate that name as part of their file name.  The options that apply to
+#  the resources, file names, cost centers, etc. to be used when running each
+#  test case are defined in this simple input file.  These options are used to
+#  build and store a customized script in a directory dedicated to each test.
+#
+#  Note that input values seen here must remain in THE EXACT ORDER SHOWN BELOW.
+#
+#  The programs that read "input options and definitions" such as those
+#  seen below are designed to ignore any line that begins (IN COLUMN 1) with the
+#  symbol commonly referred to as a pound sign, number sign, or crosshatch (#).
+#
+#  This simple approach was chosen due to the fact that the automated code was
+#  written as a prototype, and prepared as quickly as possible to provide the
+#  GMI developers with a simple way to run tests to check the basic validity
+#  of the software following upgrades made to the GMI CVS repository.
+#
+#  The automated code is stored in a self-contained directory "skeleton" in CVS
+#  to allow developers to check out a "fresh copy" at any time and rebuild anew.
+#
+#  When running the full chain of scripts, they are capable of automatically
+#  checking out the code from CVS, building the GMI executables, building and
+#  running batch jobs for each test case in their own directory, and collecting
+#  a summary of the pass/fail results and emailing that summary to the user.
+#
+#  If failures occur, the batch job scripts and input files remain in place,
+#  and can then be "tweaked" by the developer and manually rerun as needed.
+#
+#  Since the chain of automated code was built as a series of nested programs,
+#  parts of them can be run independently if you are familiar with the code, and
+#  some of them can be run interactively, but this product is primarily intended
+#  to be used to run batch/background jobs.  Once again, keep in mind that this
+#  is a prototype which may be enhanced later.  Although it offers a convenient
+#  way to test the code, you still need to check the results carefully.
+#
+#  Listed below are the options that are needed at this time.
+#  Each input option appears below a "comment line" describing its relevance.
+#_______________________________________________________________________________
+#
+#  This was designed by Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#_______________________________________________________________________________
+#
+#  Modification History:
+#
+#  11/27/2005  W. Hoff            Original
+#_______________________________________________________________________________
+#
+#  Define the "Cost Center" (i.e., Sponsor Code) to be used for batch jobs
+#
+a930b
+#
+#  GMI problem_name (i.e., the prefix that applies to the .in Namelist file)
+#
+combo_reduced_fvgcm
+#
+#  Number of processors to be used
+#
+16
+#
+#  Wall Clock time limit in hours/minutes (hh:mm)
+#
+01:15
+#
+#  Batch Queue to be used
+#
+general
+#
+#  Ascii Output files to be examined to verify the success of this test case
+#
+combo_reduced_fvgcm.asc

@@ -1,0 +1,207 @@
+#!/usr/bin/perl -w
+#_______________________________________________________________________________
+#
+#  gmi-exam-launcher :  Pre-release prototype code.  Invocation Example(s):
+#
+#  ./gmi-exam-launcher   /scr/$USER/GMIexam  chemtypes
+#  ./gmi-exam-launcher  /home/$USER/GMIexam  chemtypes
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+use strict;
+#->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+my ($chemlist, $chemtype, $dl, $en, $examhome, $gmiroot, $infile);
+my ($m, $mo, $nr, $r, $rc, $runthis, $wrapdelay, $zmode, $znode);
+my ($zresult, $zscript, $zsystem, $zuser, $zwrapup);
+my (@chem, @nolines, @rows, @zmoment);
+
+$wrapdelay = 2;    # Number of minutes to delay before starting monitoring job.
+$dl = '=' x 70;    # Divider line of 70 equal sign characters.
+#_______________________________________________________________________________
+#
+#  Begin basic checks and preparations related to I/O arguments, files, etc.
+#_______________________________________________________________________________
+#
+if ( @ARGV ne 2 )
+{  print "\n\nERROR.  This program uses 2 inputs.  Please read its comments.\n";
+   print "Execution Halted.\n";
+   exit 1;
+}
+($gmiroot, $chemlist) = @ARGV;
+
+$examhome = "$gmiroot/system-tests/gmi-exam";
+#_______________________________________________________________________________
+$runthis = 'date +%Y%m%d-%H%M%S';
+chomp ( @zmoment = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  print "\nERROR.  Use of the date command failed with return code = $rc\n";
+   print "Execution Halted.\n";
+   exit 2;
+}
+$infile  = "$examhome/Test-plans/$chemlist";
+$zresult = "$examhome/Test-jobs/$chemlist-result-$zmoment[0]";
+$zscript = "$examhome/Test-jobs/$chemlist-script-$zmoment[0]";
+$zwrapup = "$examhome/Test-jobs/$chemlist-wrapup-$zmoment[0]";
+#_______________________________________________________________________________
+#
+unless ( open ( CHEMTYPES, "$infile" ) )
+{  print "\nERROR!  Input File: $infile\nencountered OPEN Error: $!\n";
+   print "Execution Halted.\n";
+   exit 3;
+}
+unless ( open ( ZR, "> $zresult" ) )
+{  print "\nERROR!  Could not write to $zresult\n";
+   print "due to OPEN Error: $!\n\nExecution Halted.\n";
+   exit 4;
+}
+unless ( open ( ZS, "> $zscript" ) )
+{  print "\nERROR!  Could not write to $zscript\n";
+   print "due to OPEN Error: $!\n\nExecution Halted.\n";
+   exit 5;
+}
+chomp ( @rows = <CHEMTYPES> );
+close         (  CHEMTYPES  );
+$nr=0;
+for $r (@rows)  {  if ( $r !~ /^#/ )  { $chem[$nr] = $r;  $nr++; }  }
+unless ($nr)
+{  print "\nERROR!  Input File: $infile\nDID NOT contain any line(s) ";
+   print "defining the chemistry type(s).\n\nExecution Halted.\n";
+   exit 6;
+}
+@rows  = ();
+$zmode = 'SPAWNJOBS';       # The default mode is to build and SPAWN Batch Jobs.
+$zuser = $ENV{USER};        # Obtain the User's Id.
+
+if ( defined ($ENV{GMI_EXAM_MODE}) )
+{  $zmode  =  $ENV{GMI_EXAM_MODE};  } # Allow users to run in "Build Only" mode.
+
+if ( $zmode ne 'BUILDJOBS'  &&  $zmode ne 'SPAWNJOBS' )     # Safety precaution.
+{    $zmode =  'BUILDJOBS';    }
+
+$runthis = "uname -n";         # Determine which system (i.e. host) we're using.
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc  ||  @nolines < 1 )
+{  print "\nERROR.  Could not run a uname command!\nReturn code = $rc\n";
+   print "\nHalting Execution.  Please Investigate this problem!!!\n";
+   exit 7;
+}
+$zsystem = $nolines[0];
+#_______________________________________________________________________________
+#
+#  For now, these modules are specifically designed for use on Halem.
+#
+#  However, the batch job scripts can also be used as interactive POSIX scripts
+#  on other platforms such as SGI Systems, since the BSUB directives will be
+#  treated as "comments" on Non-Compaq systems.
+#
+#  Therefore, if the current system is not Halem, we will set zmode
+#  to "Build Only" (thereby suppressing the spawning of batch jobs).
+#
+#  In addition, if the system is Halem, we also set a node value of halem3,
+#  which may be needed later to run an "at command" (if $zmode = 'SPAWNJOBS').
+#_______________________________________________________________________________
+#
+if ( $zsystem !~ /halem/ )
+{  $zmode = 'BUILDJOBS';
+   $znode = $zsystem;
+}  else
+{  $znode = 'halem3';
+}
+#$Dbug=0;$zmode='SPAWNJOBS';
+#_______________________________________________________________________________
+#
+#  If spawning jobs, we'll open another file to create a "wrapup script" that
+#  will run an "at command" (via ssh) to initiate a job monitoring script, and
+#  we'll activate a Mail Option (mo) that will email final results to the user.
+#_______________________________________________________________________________
+#
+if ( $zmode eq 'SPAWNJOBS' )
+{  $mo = 'mailme';
+   unless ( open ( ZW, "> $zwrapup" ) )
+   {  print "\nERROR!  Could not write to $zwrapup\n";
+      print "due to OPEN Error: $!\n\nExecution Halted.\n";
+      exit 8;
+   }
+}  else
+{  $mo = '';
+}
+$m = "The gmi-exam-launcher program will now begin building a script named:\n"
+   . "$dl\n$zscript\n\n"
+   . "which will launch GMI tests for chemistry types named in input file:\n"
+   . "$dl\n$infile\n\n"
+   . "and the stdout + stderr results from each launch will be stored in:\n"
+   . "$dl\n$zresult\n\n";
+print    "$m";
+print ZR "$m";
+
+$m = "#!/bin/sh\n"
+   . "GMI_EXAM_MODE='$zmode' ; export GMI_EXAM_MODE\n";
+print ZS "$m";
+$en = 0;
+for $chemtype ( @chem )
+{  $en++;
+   $m = "\n$examhome/gmi-exam-driver $gmiroot $chemtype $zmoment[0]\n"
+      . 'GMI_EXAM_STATUS="$?"'                                            . "\n"
+      . 'if [ "$GMI_EXAM_STATUS" -ne "0" ]; then'                         . "\n"
+      . "   echo 'ALERT!  The gmi-exam-driver script failed on the call'\n"
+      . "   echo 'for CHEMTYPE = $chemtype'\n"
+      . '   echo "The gmi-exam-driver Error Exit = $GMI_EXAM_STATUS"'     . "\n"
+      . "   echo 'Please Investigate the cause of this Failure!'\n"
+      . "   exit $en;\n"
+      . "fi\n"
+      . "echo 'Successful Initial Launch for CHEMTYPE = $chemtype'\n";
+   print ZS "$m";
+}
+$m = "echo ' '\n"
+   . "echo 'The gmi-exam-launcher program completed the process of building'\n"
+   . 'echo "and/or spawning jobs on ' . $zsystem . ' at `date`"'
+   . "\nexit 0\n";
+print ZS "$m";
+close(ZS);
+$runthis = "chmod 750 $zscript";  # Set Group readable/executable bits.
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  $m = "\nERROR.  Could not chmod the launcher script!\nReturn code = $rc\n"
+      . "\nHalting Execution.  Please Investigate this problem!!!\n";
+   print    "$m";
+   print ZR "$m";
+   close(ZR);
+   exit 9;
+}
+close(ZR);
+$runthis = "$zscript >> $zresult 2>&1";
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  print "\nERROR.  The job launcher script failed!\nReturn code = $rc\n";
+   print "\nHalting Execution.  Please Investigate this problem!!!\n";
+   exit 10; 
+}
+if ( $zmode eq 'BUILDJOBS' )  {  exit 0;  }
+
+print "\ngmi-exam-launcher will now use ssh and at commands to\n";
+print "invoke a background job to monitor the spawned batch jobs.\n\n";
+
+print ZW "#!/bin/sh\n$examhome/gmi-exam-monitor $gmiroot $zmoment[0] $mo\n";
+close(ZW);
+$runthis = "chmod 750 $zwrapup";  # Set Group readable/executable bits.
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  $m = "\nERROR.  Could not chmod the wrap-up script!\nReturn code = $rc\n"
+      . "\nHalting Execution.  Please Investigate this problem!!!\n";
+   print    "$m";
+   exit 11;
+}
+$runthis = "ssh $zuser".'@'."$znode 'at -f $zwrapup now + $wrapdelay minute'";
+
+#$Dbug=0;print"RT: $runthis\n";
+system "$runthis";

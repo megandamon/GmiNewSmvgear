@@ -1,0 +1,8 @@
+#
+cp ../src/*F90 .
+#
+./protex -s AnIntro m_FastjMethod.F90 m_FastjMIEparameters.F90 m_FastjCTMparameters.F90 m_FastjJvaluesVars.F90 m_FastjMetVars.F90 m_FastjCTMspecific.F90  m_FastjCoreFastj.F90 m_FastjCTM_FastjLinking.F90  m_FastjCoreScattering.F90 m_FastjReadNamelistFile.F90  > fastJx_componentization.tex
+
+# FastjStandalone.F90
+#
+rm -f *.F90

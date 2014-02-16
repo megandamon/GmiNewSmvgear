@@ -1,0 +1,128 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# $Id: check_ver,v 1.2 2011-08-09 22:12:59 mrdamon Exp $
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   check_ver
+#
+# DESCRIPTION
+#   This script checks the version  of gmi_install,
+#     $SCRIPTSDIR vs. $INSTALLDIR (which is one up from $GMIHOME).
+#   This script checks the versions of cshrc.ggmi & login.ggmi,
+#     $SCRIPTSDIR vs. $HOME       (.cshrc.ggmi & .login.ggmi).
+#
+#   Usage:  check_ver
+#
+#=============================================================================
+#
+
+
+setenv INSTALLDIR $GMIHOME/..
+setenv SCRIPTSDIR $GMIHOME/actm/gmimod/Other/scripts
+
+
+echo ""
+echo "Checking version of gmi_install:"
+echo "  $SCRIPTSDIR vs."
+echo "  $INSTALLDIR"
+echo "Checking versions of .cshrc.ggmi & .login.ggmi:"
+echo "  $SCRIPTSDIR vs."
+echo "  $HOME"
+echo ""
+
+
+echo "======================================================="
+
+
+if (-e "$SCRIPTSDIR/gmi_install") then
+
+  set id_string1 = `grep '$Id' $SCRIPTSDIR/gmi_install`
+
+  if (-e "$INSTALLDIR/gmi_install") then
+
+    set id_string2 = `grep '$Id' $INSTALLDIR/gmi_install`
+
+    if ($id_string1[4] == $id_string2[4]) then
+
+      echo '$SCRIPTSDIR/gmi_install version == $INSTALLDIR version.'
+      echo "  $id_string1[4]"
+
+    else
+
+      echo '$SCRIPTSDIR/gmi_install version != $INSTALLDIR version\!'
+      echo '$SCRIPTSDIR/gmi_install =>' $id_string1[4]
+      echo '$INSTALLDIR/gmi_install =>' $id_string2[4]
+
+    endif
+
+  else
+
+    echo ""
+    echo "$INSTALLDIR/gmi_install NOT FOUND\!"
+    echo ""
+
+  endif
+  
+else
+
+  echo ""
+  echo "$SCRIPTSDIR/gmi_install NOT FOUND\!"
+  echo ""
+
+endif
+
+
+foreach filename (cshrc.ggmi login.ggmi)
+
+  if (-e "$SCRIPTSDIR/$filename") then
+
+    set id_string1 = `grep '$Id' $SCRIPTSDIR/$filename`
+
+    if (-e "$HOME/.$filename") then
+
+      set id_string2 = `grep '$Id' $HOME/.$filename`
+
+      if ($id_string1[4] == $id_string2[4]) then
+
+        echo '$SCRIPTSDIR/'$filename 'version  == $HOME       version.'
+        echo "  $id_string1[4]"
+
+      else
+
+        echo '$SCRIPTSDIR/'$filename 'version  != $HOME       version\!'
+        echo '  $SCRIPTSDIR/'$filename '=>' $id_string1[4]
+        echo '  $HOME/.'$filename '     =>' $id_string2[4]
+
+      endif
+
+    else
+
+      echo ""
+      echo "$HOME/.$filename NOT FOUND\!"
+      echo ""
+
+    endif
+  
+  else
+
+    echo ""
+    echo "$SCRIPTSDIR/$filename NOT FOUND\!"
+    echo ""
+
+  endif
+
+end
+
+
+echo "======================================================="
+echo ""
+
+
+exit
+

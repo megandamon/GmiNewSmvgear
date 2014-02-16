@@ -1,0 +1,72 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# $Id: doflint,v 1.2 2011-08-09 22:12:59 mrdamon Exp $
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   doflint
+#
+# DESCRIPTION
+#   This script runs the flint Fortran source code analyzer on the gem code.
+#
+#   It can be run on any machine where flint is available (e.g., tckk), and 
+#   where the gem code has been installed and compiled.
+#
+#   Usage:  doflint
+#
+#=============================================================================
+#
+
+
+set flint_dir   = ~/flint.$$
+set scripts_dir = $GMIHOME/actm/gmimod/Other/scripts
+
+
+echo ""
+echo "Creating directory:  $flint_dir"
+mkdir $flint_dir
+
+
+echo ""
+echo "Copying all gem .f files to $flint_dir..."
+find $GMIHOME -name "*.f" -exec /bin/cp "{}" $flint_dir \;
+
+
+echo ""
+echo "Removing messed up files from $flint_dir..."
+/bin/rm -f $flint_dir/setkin_kcalc.f
+
+/bin/rm -f $flint_dir/const_sulf_update.f
+/bin/rm -f $flint_dir/qk_aqu_rates.f
+/bin/rm -f $flint_dir/qk_gas_rates.f
+/bin/rm -f $flint_dir/setup_aquchem.f
+/bin/rm -f $flint_dir/*so2topar*.f
+/bin/rm -f $flint_dir/*sulfchem*.f
+
+
+cd $flint_dir
+
+
+echo ""
+echo "Running flint..."
+$scripts_dir/gmi_fcheck
+
+
+echo ""
+echo "Removing extraneous flint messages from output file..."
+$scripts_dir/gmi_fcheckrm
+
+
+echo ""
+echo "Check flint results in output file:"
+echo "  $flint_dir/gmi_fcheckrm.out"
+echo ""
+
+
+exit
+

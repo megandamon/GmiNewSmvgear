@@ -1,0 +1,444 @@
+!---------------------------------------------------------------------
+!  NASA/GFSC, SIVO, Code 610.3
+!---------------------------------------------------------------------
+!BOI
+! !TITLE: {\huge \bf Componentization of FastJx}
+!
+! !AUTHORS: Jules Kouatchou
+!
+! !AFFILIATION:  NASA GSFC \\ Advanced Software Technology Group \\ Software Integration and Visualization Office \\ Code 610.3 \\  Greenbelt, MD 20771 \\  Jules.Kouatchou.1@gsfc.nasa.gov
+!
+! !DATE: March 2006
+!
+! !INTRODUCTION: Introduction 
+!
+! \section{Old Version of the Code}
+! In the old version of fastj, the source code is contained in a single
+! file. Global variables are passed through common blocks in include files.
+! We list below the include files and the routines available in the code.
+!
+! \begin{verbatim}
+! common files and what they mean:
+!   parm_CTM.f    dimensions & params for code (CTM and fast-JX)
+!   parm_MIE.f    dimensions for mie code variables.
+!   cmn_metdat.f  CTM 3-D arrays, time of day, grid,  etc.
+!   cmn_JVdat.f   Xsects, Mie, etc., (initialized and then read-only)
+!
+!<<<<<<<<<<<<<<<<<<<<< CTM-specific subroutines <<<<<<<<<<<<<<<<<<<<
+! subroutines:
+!
+!     SET_ATM(GMTAU)
+!           set ups atmosphere (p,T,O3,airmass, etc) for time GMTAU
+!              COMMON BLOCKS: cmn_metdat.f
+!     SET_AER(GMTAU)
+!           set ups aerosols for time GMTAU = DUMMY
+!     SET_CLD(GMTAU)
+!           set ups clouds for time GMTAU = DUMMY
+!     INPHOT  
+!           Init. photolysis rate, called once by CHMSET
+!              COMMON BLOCKS: cmn_metdat.f, cmn_JVdat.f
+!              Input files: ECT42_grid.dat
+!     RD_JS(NJ1,NAMFIL)
+!          Read labels of photo. rates, called once by INPHOT.
+!              COMMON BLOCKS: cmn_metdat.f, cmn_JVdat.f
+!              Input files: ratj.dat
+!     RD_PROF(NJ2,NAMFIL)
+!         Read T & O3 climatology, called once by INPHOT.
+!              COMMON BLOCKS: cmn_metdat.f
+!              Input files: atmos_std.dat
+!     SET_CLD0(TINIT,ODINIT,ODINDX,ALBEDO)
+!         Initialize cloud and surface properties, called by MAIN.
+!              COMMON BLOCKS: cmn_metdat.f
+!     SET_AER0
+!         Iniitalize (climatology) aerosol OD and types (3 arrays)
+!         called by MAIN, CHMSET
+!              COMMON BLOCKS: cmn_metdat.f
+!     SET_ATM0
+!         Initialize climatologies for T & O3, set up atmospheric profiles
+!              COMMON BLOCKS: cmn_metdat.f
+!
+!<<<<<<<<<<<<<<<<<<<<< CTM-fastJX linking subroutines <<<<<<<<<<<<<<
+!
+!     PHOTOJ(UTIME,IDAY,ILNG,JLAT, SZA,ZPJ)
+!         Gateway to fast-JX, Update the photolysis rates
+!              COMMON BLOCKS: cmn_metdat.f, cmn_JVdat.f
+!
+!<<<<<<<<<<<<<<<<<<<<< Core fast-J subroutines <<<<<<<<<<<<<<<<<<<<<
+!  N.B. all these need access to cmn_JVdat.f, but do NOT write into it.
+!           also have no need to access cmn_metdat.f
+!
+!     JRATET(PPJ,TTJ,FFF, VALJL)
+!         Calculate J-value, called by PTOTOJ.
+!              COMMON BLOCKS: cmn_JVdat.f
+!     JP_ATM(PPJ,TTJ,DDJ,ZZJ,ZHL,ZZHT,AER,ABX,ADX,JXTRA)
+!         print out atmosphere used in J-value calc.
+!              COMMON BLOCKS: cmn_JVdat.f
+!     RD_XXX(NJ1,NAMFIL)
+!         Read wavelength bins, solar fluxes, Rayleigh
+!         parameters, TEM-dependent X-sections, called once by INPHOT.
+!              COMMON BLOCKS: cmn_JVdat.f
+!              Input files: FJX_spec.dat
+!     RD_MIE(NJ1,NAMFIL)
+!         Set aerosols/cloud scattering, called once by INPHOT
+!              COMMON BLOCKS: cmn_JVdat.f
+!              Input files: FJX_scat.dat
+!     FUNCTION FLINT(TINT,T1,T2,T3,F1,F2,F3)
+!     SOLARZ(GMTIME,NDAY,YGRDJ,XGRDI, SZA,COSSZA,SOLFX)
+!         calc SZA and Solar Flux factor for given lat/lon/UT
+!     SPHERE(U0,RAD,ZHL,ZZHT,AMF,L1_):
+!         calculate spherical geometry, air-mass factors
+!     EXTRAL(AER,ADX,L1X,L2X,NX,JTAUMX,ATAU,ATAU0, JXTRA)
+!         add sub-layers (JXTRA) to thick cloud/aerosol layers
+!     OPMIE (KW,KM,WAVEL,ABX,AER,ADX,U0,RFLECT,AMF,JXTRA,FMEAN)
+!         calculate mean actinic flux at desired levels
+!              COMMON BLOCKS: cmn_JVdat.f
+!
+!<<<<<<<<<<<<<<<<<<<<<<< Core scattering subroutines <<<<<<<<<<<<<<<
+!
+!      MIESCT (FJ,POMEGA,FZ,ZTAU,ZFLUX,ZREFL,ZU0,MFIT,ND)
+!            include 'parm_MIE.f' = dimension parameters
+!      BLKSLV (FJ,POMEGA,FZ,ZTAU,ZFLUX,ZREFL,WT,EMU,PM,PM0,M,N,MFIT,ND)
+!              PARAMETER FILE: parm_MIE.f
+!      GEN (POMEGA,FZ,ZTAU,ZFLUX,ZREFL,WT,EMU,PM,PM0,B,CC,AA,A,H,C1
+!            ,M,N,MFIT,ND,ID)
+!              PARAMETER FILE: parm_MIE.f
+!      LEGND0 (X,PL,N)
+!      MATIN4 (A)
+!      GAUSSP (N,XPT,XWT)
+!      EFOLD  (F0, F1, N, F)
+! \end{verbatim}
+!%
+!%
+!%
+! In addition to the above, the code needs input files (hard coded):
+! \begin{verbatim}
+!        FJX_spec.dat   spectral data (X-sections+) ver 2005e
+!        FJX-scat.dat   scattering data for clouds+aerosols
+!                       this data set has been separated from the X-sections
+!
+!  These are for the standalone run and will not be needed in CTM run
+!        FJX_test.dat   set up for p, T, grid etc
+!        atmos_std.dat  UCI's old std atmospheres
+!        ECT42_grid.dat used for sample run
+!        ratj.dat       UCI's old chemistry set of J's, shows mapping from fast-JX
+! \end{verbatim}
+!
+! \section{New Design}
+! In this work we want to reorganize the structure of the code by
+! \begin{itemize}
+! \item Coverting the code into Fortran 90 free format.
+! \item Breaking the code into modules which members routines/functions
+!       deal with the same core computations.
+! \item Transforming include files into modules (therefore removing
+!       common blocks).
+! \item Introducing intialization procedures (for variable allocations,
+!       reading of input files) to be able to test the code (regardless
+!       of the CTM used) without recompiling it.
+! \item Removing as far as possible the CTM dependence from the code:
+!       all CTM related variables (dimensions, temperature, surface
+!       pressure, surface albedo, etc.) should be passed through 
+!       well defined interfaces.
+! \item Writing standard interfaces ({\bf Intialize}, {\bf Run} and
+!       {\bf Finalize}) which calls will be the only way to invoke
+!       the package.
+! \item Introducing a standard way of making comments in order to be
+!       be able to automatically generate documentation.
+! \end{itemize}
+! %
+! At the initial stage of this work, we first separated the {\tt Fastj}
+! routines into four groups:
+!%
+! \begin{enumerate}
+! \item CTM-specific routines
+! \item CTM-fastJX linking routines
+! \item Core fast-J routines
+! \item Core scattering routines
+! \end{enumerate}
+! %
+! Routines of each group were included in a Fortran module.
+! We then proceeded by converting include files into Fortran modules.
+! All the {\em include} statements were replaced by {\em use}
+! statements.
+!
+! We made sure that the outputs (from the standalone program) of the initial 
+! work reproduced the results of the original version of the code.
+! We continued by removing the CTM dependence from {\tt Fastj}:
+! %
+! \begin{itemize}
+! \item The reading of the sample input file name is no longer done
+!       inside the routines {\em INPHOT} and is moved outside the
+!       package (see the file {\em FastjStandalone.F90}).
+! \item The variables $I\_$, $J\_$, $L\_$, $L1\_$, $L2\_$ and $JVL\_$ and
+!       $JVN\_$ are no more parameters but will be set at run time
+!       (see the file {\em m\_FastjCTMparameters.F90} for the new declarations
+!        and routine {\em SetFastjCTMdims}).
+! \item All the arrays (declared in the original include files)
+!       demensioned using any of the above variables, are now declared
+!       as allocatable pointers and are allocate at run time (see
+!       the files {\em m\_FastjJvaluesVars.F90} and {\em m\_FastjMetVars.F90}).
+! \end{itemize}
+!
+! In the last step, we wrote a module ({\em m\_FastjMethod.F90}) 
+! containing routines to invoke {\tt Fastj}:
+! %
+! \begin{description}
+! \item[InitializeFastJ]: Calls once to initialize CTM related variables
+!                         and allocate variables depending on CTM dimensions.
+! \item[RunFastJ]: Calls at each time step and has as arguments changing CTM 
+!                  related variables
+! \item[FinalizeFastJ]: Calls once to deallocate (if needed) at the end of
+!                       the calculations some variables.
+! \end{description}
+!
+! {\bf It is important to note that the above routines were written to test the
+! the provided standalone program. For the implementation of the package in
+! a CTM, the arguments and content of the first two routines will have to be
+! modified.}
+!
+! The new version of the code contains the following files
+!
+! \begin{verbatim}
+!  m_FastjMIEparameters.F90      Module for dimensions for MIE code variables.
+!  m_FastjCTMparameters.F90      Module for dimensions & params for code (CTM and 
+!                                fast-JX).
+!                                The values of I_, J_, L_, L1_, L2_, JVL_ and JVN_ 
+!                                are set at run time. This removes the dependence on
+!                                the CTM resoltion. 
+!  m_FastjJvaluesVars.F90        Module for Xsects, Mie, etc.
+!                                A routine was added to allocate variables depending 
+!                                on JVN_.
+!  m_FastjMetVars.F90            Module for CTM 3-D arrays, time of day, grid,  etc.
+!                                MetField variables are now declared as allocatable
+!                                pointers. A routine was added to allocate them.
+!
+!  FastjStandalone.F90           Standalone code.
+!                                It now requires the reading of a namelist
+!                                file and the allocation of MetFields related
+!                                variables.
+!  m_FastjMethod.F90             Contains routines to Initialize, Run and Finalize the
+!                                package.
+!  m_FastjReadNamelistFile.F90   Contains a routine to read the input data
+!                                files. May also add a section to read in
+!                                MetFields domain decomposition information.
+!  m_FastjCTM_FastjLinking.F90   CTM-fastJX linking routine.
+!  m_FastjCTMspecific.F90        CTM-specific routines.
+!                                The routine INPHOT now has five arguments which are
+!                                the input file names (provided at run time through
+!                                a namelist file).
+!  m_FastjCoreFastj.F90          Core fast-J routines.
+!  m_FastjCoreScattering.F90     Core scattering routines.
+! \end{verbatim}
+! %
+!
+! We introduced new names to label the input files:
+!
+! \begin{verbatim}
+!  CrossSection_InfileName       fast-J X-sections (spectral data)   input file name
+!  ScatteringData_InfileName     Aerosol/cloud scattering data       input file name
+!  PhotRateLabels_InfileName     Labels of photolysis rates required input file name
+!  T_O3_Climatology_InfileName   T & O3 climatology                  input file name
+!  SampleRun_InfileName          Sample run                          input file name
+!  CTMdata_InfileName            Setting p, T, grid etc.             input file name
+! \end{verbatim}
+! %
+! These input files are no more hard coded and are read in (as part of the
+! initialization process) from the input namelist file.
+!
+! Below is the standalone code
+! {\tiny 
+! \begin{verbatim}
+!!-------------------------------------------------------------------------
+!!  NASA/GFSC, SIVO, Code 610.3
+!!-------------------------------------------------------------------------
+!
+!      program FastjStandalone
+!
+!      use m_FastjMethod          , only : InitializeFastJ
+!      use m_FastjMethod          , only : RunFastJ
+!      use m_FastjMetVars         , only : XDGRD
+!      use m_FastjMetVars         , only : YDGRD
+!      use m_FastjJvaluesVars     , only : JLABEL
+!      use m_FastjReadNamelistFile, only : FastjReadNamelistFile
+!
+!      implicit none
+!
+!! The following variables are required to initialize and run FastJ.
+!
+!      integer              :: LongDim           ! Longitude dim of CTM grid
+!      integer              :: LatDim            ! latidude  dim of CTM grid
+!      integer              :: VertDim           ! altitude  dim of CTM grid
+!      integer              :: NumJval           ! num. photolysis reactions
+!      integer              :: VertDimJval       ! vertical(levels) dim for J-values
+!      real*8               :: GMTAU             ! Current time
+!      integer              :: iMONTH            ! Current month
+!      real*8               :: SurfAlbedo        ! Surface albedo
+!      real*8               :: SolarZenithAngle  ! Solar zenith angle
+!      integer              :: IndexCloud        ! Index Cloud
+!      real*8 , allocatable :: PhotRate(:,:)     ! array of J's indexed to CTM chemistry
+!      real*8 , allocatable :: Temp(:)           ! Temperature
+!      real*8 , allocatable :: CloudOptDepth(:)  ! Cloud optical depth
+!      real*8 , allocatable :: LongGrid(:)       ! longitude grid
+!      real*8 , allocatable :: LatGrid (:)       ! latitude grid
+!      real*8 , allocatable :: EtaaMet(:)        ! Eta(a) value for level boundaries
+!      real*8 , allocatable :: EtabMet(:)        ! Eta(b) value for level boundaries
+!      real*8 , allocatable :: GridBoxArea(:,:)  ! Grid box area (m2)
+!      real*8 , allocatable :: SurfPressure(:,:) ! Surface pressure
+!
+!      character (len=128)  :: CrossSection_InfileName     ! fast-J X-sections (spectral data) input file name
+!      character (len=128)  :: ScatteringData_InfileName   ! Aerosol/cloud scattering data input file name
+!      character (len=128)  :: PhotRateLabels_InfileName   ! Labels of photolysis rates required input file name
+!                                                          ! keyed to chem code
+!      character (len=128)  :: T_O3_Climatology_InfileName ! Read in T & O3 climatology input file name
+!                                                          ! general backup clim.
+!!
+!! The variables below are specific to the current test case.
+!!
+!      real*8               :: PressureIJ
+!      real*8               :: DELTAU
+!      integer              :: I, J, K, L
+!      integer              :: NSTEP
+!      integer              :: ILNG,JLAT,IDAY, IPH
+!
+!      character (len=128)  :: namelist_file               ! Input namelist file
+!      character (len=128)  :: SampleRun_InfileName        ! Sample run input file name
+!      character (len=128)  :: CTMdata_InfileName          ! Input file setting up p, T, grid etc
+!
+!      write(6,*) ' fast-JX ver-5.3 standalone CTM code'
+!
+!!!!!!
+!!!!!! Initialization Procedure
+!!!!!!
+!      ! Read in the namelist file.
+!      ! We read not only the name of the input files but also
+!      ! the variables setting the CTM dimensions.
+!
+!      namelist_file = 'FastjNamelistFile'
+!      call FastjReadNamelistFile(namelist_file,          &
+!                             LongDim, Latdim, VertDim,   &
+!                             VertDimJval, NumJval,       &
+!                             CrossSection_InfileName,    &
+!                             ScatteringData_InfileName,  &
+!                             PhotRateLabels_InfileName,  &
+!                             T_O3_Climatology_InfileName,&
+!                             CTMdata_InfileName,         &
+!                             SampleRun_InfileName         )
+!
+!     allocate( LongGrid     (LongDim))
+!     allocate( LatGrid      (LatDim))
+!     allocate( EtaaMet      (VertDim+1))
+!     allocate( Temp         (VertDim))
+!     allocate( CloudOptDepth(VertDim))
+!     allocate( GridBoxArea  (LongDim, LatDim))
+!     allocate( SurfPressure (LongDim, LatDim))
+!     allocate( PhotRate     (VertDimJval, NumJval))
+!
+!!!!!!
+!!!!!! Read in input file
+!!!!!!
+!      open(1, file=CTMdata_InfileName, status='old')
+!      read(1,*)
+!      read(1,*)
+!      read(1,*)
+!      read(1,*) IDAY
+!          iMONTH=int(dble(IDAY)*12.d0/365.d0)+1    !  Approximately
+!      read(1,*) NSTEP
+!      read(1,*) GMTAU
+!      read(1,*) DELTAU
+!      read(1,*) JLAT
+!      read(1,*) ILNG
+!      read(1,*) PressureIJ
+!      read(1,*) SurfAlbedo
+!      read(1,*) IndexCloud
+!      read(1,*)
+!!--only for L_=37-layer EC
+!      do L=1,VertDim
+!        read(1,*) J,EtaaMet(L),EtabMet(L),Temp(L),CloudOptDepth(L)
+!      enddo
+!        read(1,*) J,EtaaMet(VertDim+1),EtabMet(VertDim+1)    !top layer
+!      close(1)
+!
+!!! Read in annual mean pressure field
+!      IPH = 8
+!      open (IPH, file=SampleRun_InfileName, form='formatted',status='old')
+!      read (IPH,*)
+!      read (IPH,'(16F8.2)') (LongGrid(I),I=1,LongDim)
+!      read (IPH,*)
+!      read (IPH,'(16F8.2)') (LatGrid(J),J=1,LatDim)
+!      read (IPH,*)
+!      read (IPH,'(16F8.2)') (GridBoxArea (1,J),J=1,LatDim)
+!      read (IPH,*)
+!      read (IPH,'(16F8.1)') ((SurfPressure(I,J),I=1,LongDim),J=1,LatDim)
+!      close(IPH)
+!
+!      do J=1,LatDim
+!        GridBoxArea (1,J) = GridBoxArea (1,J)*1.d9
+!        do I=2,LongDim
+!        GridBoxArea (I,J) = GridBoxArea (1,J)
+!        enddo
+!      enddo
+!
+!      call InitializeFastJ &
+!                 ( LongDim, LatDim, VertDim, NumJval, VertDimJval, iMONTH, &
+!                   ILNG, JLAT, &
+!                   EtaaMet, EtabMet, GridBoxArea, LongGrid, LatGrid,       &
+!                   PressureIJ, &
+!                   Temp, CloudOptDepth, IndexCloud, SurfAlbedo, SurfPressure, &
+!                   CrossSection_InfileName  , ScatteringData_InfileName,   &
+!                   PhotRateLabels_InfileName, T_O3_Climatology_InfileName)
+!
+!!!!!!
+!!!!!! Time stepping procedures
+!!!!!!
+!
+!      GMTAU = GMTAU - DELTAU
+!
+!      do I=1,NSTEP
+!         GMTAU = GMTAU + DELTAU
+!
+!         if (GMTAU.ge.24.0) then
+!            IDAY=mod(IDAY,365)+1
+!            GMTAU=mod(GMTAU,24.d0)
+!            iMONTH=int(dble(IDAY)*12.d0/365.d0)+1   !do a better calendar
+!         endif
+!
+!         call  RunFastJ(ILNG, JLAT, IDAY, GMTAU, iMONTH, &
+!                          SolarZenithAngle, PhotRate)
+!
+!         !---printout J's:
+!         write(6,1001) I,IDAY,GMTAU,SolarZenithAngle, YDGRD(JLAT),XDGRD(ILNG)
+!         write(6,1002) (JLABEL(K), K=1,NumJval)
+!         do L=VertDimJval,1,-1
+!            write(6,1003) L,(PhotRate(L,K),K=1,NumJval)
+!         enddo
+!
+! 1001    format('Step=',i3,'  Day=',i3,' UT(hr)=',f4.1,'  SZA=',f7.2, &
+!     &                 '  LAT x LONG=',2f7.2)
+! 1002    format(1x,'L=  ',64(a7,2x))
+! 1003    format(i3,1p, 64e9.2)
+!
+!      enddo
+!      stop
+!
+!      end program FastjStandalone
+! \end{verbatim}
+! }
+!
+! \begin{thebibliography}{99}
+! \bibitem{Bian-Prather02} H. Bian and M. Prather,
+!  Fast-J2: Accurate Simulation of Stratospheric Photolysis in 
+!  Global Chemical Models, 
+! {\em J. Atmos. Chem.}, {\bf 41}, p. 281--296 (2002).
+! \bibitem{Kouatchou-etal} J. Kouatchou, B. Das and H. Oloso,
+!  Global Modeling Initiative: Tutorial and User's Guide,
+!  online documentation available at
+!  {\tt http://gmi.gsfc.nasa.gov/tutorial/index.html}.
+! \bibitem{Wild-Zhu-Prather} O. Wild, X. Zhu and M.J. Prather, 
+! Fast-J: Accurate Simulation of In- and Below-Cloud Photolysis in 
+! Tropospheric Chemical Models, 
+! {\em J. Atmos. Chem.}, {\bf 37}, p. 245--282 (2000). 
+! \end{thebibliography}
+!
+! \appendix
+!
+!EOI 
+!---------------------------------------------------------------------

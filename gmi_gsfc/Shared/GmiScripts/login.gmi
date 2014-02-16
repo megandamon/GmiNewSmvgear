@@ -1,0 +1,109 @@
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill , LLNL     , jrt@llnl.gov
+#   Jules Kouatchou, NASA/GSFC, Jules.Kouatchou-1@nasa.gov
+#
+# FILE
+#   login.gmi/.login.gmi
+#
+# DESCRIPTION
+#   This .login sub-file contains the necessary settings for running
+#   Gem/Gmimod.  The user must initially do the following (first time only):
+#
+#   1) Copy this file to your home directory on the machine of interest and
+#      rename it .login.gmi.
+#
+#   2) Add the following to the end of your .login file:
+#
+#          if (-e ~/.login.gmi) then
+#            source ~/.login.gmi
+#          endif
+#
+#   3) When you have taken care of the things above, as well as modified
+#      your cshrc.gmi/.cshrc.gmi, log out of the machine and then log back
+#      on and you should be all set.
+#
+#=============================================================================
+#
+
+
+set path = ($path /usr/bin/X11)
+set path = ($path $gmi/Applications/GmiBin $gem/esm_tools/bin $gmi/Shared/GmiScripts)
+
+
+#================================
+if ($ARCHITECTURE == ARCH_COMPAQ) then
+#================================
+
+  unsetenv KRB5CCNAME
+
+  if ($HOSTMACH == halem_machine) then
+    set path = ($path /usr/local/unsupported/netcdf-3.5.0/bin)
+  endif
+
+#===================================
+else if ($ARCHITECTURE == ARCH_CRAY) then
+#===================================
+
+  set path = ($path /bin /usr/bin /usr/ucb /usr/local/bin)
+  set path = ($path /usr/local/pkg/usg/netcdf-3.4/bin /u/aey/u6382/nco-1.1.40/bin)
+
+#=====================================
+else if ($ARCHITECTURE == ARCH_IBM_SP) then
+#=====================================
+
+  setenv MP_INFOLEVEL  1
+  setenv MP_LABELIO    yes
+
+  if ($HOSTMACH == frost_machine) then
+
+    setenv MP_RMPOOL   0
+    set path = ($path /usr/local/bin)
+
+  else if ($HOSTMACH == seaborg_machine) then
+
+    setenv MP_RMPOOL   1
+    set path = ($path /usr/common/usg/netcdf/3.5/bin)
+
+  endif
+
+#====================================
+else if ($ARCHITECTURE == ARCH_INTEL) then
+#====================================
+
+  set machineName = `echo $HOSTMACH | awk '{print substr($0,0,8)}'`
+  if ($machineName == discover) then
+ 
+    setenv HOSTMACH $machineName
+    set path = ($path /usr/local/other/netcdf/3.6.1/bin)
+ 
+  endif
+
+#===================================
+else if ($ARCHITECTURE == ARCH_SUN4) then
+#===================================
+
+  set path = ($path /usr/local/SUNWspro/bin)
+  set path = ($path $FLINTHOME /home/afranz/nco-1.1.46/bin)
+
+#==================================
+else if ($ARCHITECTURE == ARCH_T3E) then
+#==================================
+
+  set path = ($path /usr/local/pkg/usg/gnu/tbin)
+  set path = ($path /usr/local/pkg/usg/netcdf3.4/bin)
+
+  set path = ($path $advec/dao2advec $chem/solvers/smv2chem $emiss/harvard $emiss/llnl $phot/lookup)
+
+#====
+endif
+#====
+
+set path = ($path ~/bin .)
+
+echo " "
+echo "ARCHITECTURE set to $ARCHITECTURE."
+echo "HOSTMACH     set to $HOSTMACH."
+echo " "
+

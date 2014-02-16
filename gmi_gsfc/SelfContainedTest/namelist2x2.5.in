@@ -1,0 +1,161 @@
+&ESM	
+  problem_name = 'test_gmi',
+  timer_esm = 1,	
+  NP_actm   = 63,	
+  oneprcsr  = 0,	
+  day0      = 1,	
+  tbegin_days = 0.0d0,	
+  tfinal_days = 1.d0  /	
+&nlGmiControl	
+  do_ftiming  = T,	
+  NPI_actm    = 9,	
+  NPJ_actm    = 7,	
+  gmi_nborder = 4,	
+  i1_gl       = 1,	
+  i2_gl       = 144,	
+  ju1_gl      = 1,	
+  jv1_gl      = 1,	
+  j2_gl       = 91,	
+  k1_gl       = 1,	
+  k2_gl       = 42,	
+  num_species = 124,	
+  start_hms   = 000000,	
+  start_ymd   = 20050101,	
+  tdt = 1800.0d0,	
+  leap_year_flag = -1 /	
+&nlGmiMetFields	
+  gmi_data_dir = './',
+  met_opt     = 3,
+  met_grid_type  = 'A',
+  do_timinterp_met  = F,
+  met_infile_num = 1,
+  mrnum_in       = 1,
+  met_filnam_list = 'metfields.list',
+  do_read_met_list = T,
+  do_cycle_met = T,
+  gwet_opt = 1,
+  mdt = 10800.0d0 /
+&nlGmiSpeciesConcentration
+  const_opt   = 2,
+  const_infile_name = 'xxx',
+  fixed_const_timpyr = 12,
+  fixedConcentrationSpeciesNames = 'ACET',
+  fixed_const_infile_name = 'input-2x2.5/fixed_ACET_CH4_gmi_G4agcm_2%5x2x42.nc' /
+&nlGmiDiagnostics
+  pr_diag  = F,
+  pr_ascii = T,
+    pr_ascii1 = T,
+    pr_ascii2 = F,
+    pr_ascii3 = T,
+    pr_ascii4 = T,
+    pr_ascii5 = T,
+  ascii_out_n = 24,
+  outmain_name = 'adaily_main',
+  outaerdust_name = 'aerdust',
+  pr_ascii_step_interval = 24,
+  pr_netcdf = T,
+  prs_dim_name = 'eta_dim',
+  pr_level_all= T,	
+  k1r_gl      = 1,	
+  k2r_gl      = 42,	
+  pr_const = T,
+  pr_psf = T,
+  pr_kel = T,
+  pr_mass = T,
+  do_mean = T,	
+  pr_flux = T
+  pr_const_flux      = T,    
+  pr_psf_flux        = T,    
+  pr_nc_period_flux  = 1.0,  
+  fluxSpeciesNames = 'CH2O, CH4, CO, HNO3, H2O2, MP, NO, NO2, N2O5, O3, PAN, SYNOZ', 
+  pr_tend = T,	
+  pr_nc_period_days   = 1.0d0,
+  pr_AerDust = T,
+  pr_const_column = T,
+  pr_tend_all = F,
+  tendSpeciesNames = 'CH2O, CH4, CO, HNO3, H2O2, MP, NO, NO2, N2O5, O3, PAN, SYNOZ' /
+&nlGmiRestart
+  pr_restart = T,
+  do_overwrt_rst = F,
+  pr_rst_period_days = 1.0d0,
+  rd_restart = T,
+  restart_infile_name = 'input-2x2.5/gmic_aura2ReRunHO2Light_2004_dec.rst.nc' /
+&nlGmiAdvection
+  advec_opt = 1,
+  press_fix_opt = 1,
+  advec_flag_default = 1,
+  advectedSpeciesNames = 'CH2O, CH4, CO, H2, HCOOH, HNO2, HNO3, HNO4, 
+H2O2, MOH, MP, N2O, NO, NO2, NO3, N2O5, O3, Br, BrCl, BrO, BrONO2, 
+HBr, HOBr, Cl, Cl2, ClO, Cl2O2, ClONO2, HCl, HOCl, OClO, CH3Br, 
+CH3Cl, CH3CCl3, CCl4, CFCl3, CF2Cl2, CFC113, CFC114, CFC115, 
+HCFC22, HCFC141b, HCFC142b, CF2Br2, CF2ClBr, CF3Br, H2402, ACTA, 
+ALD2, ALK4, C2H6, C3H8, ETP, HAC, IALD, IAP, ISOP, MACR, MEK, MVK, 
+PAN, PMN, PRPE, R4N2, RCHO, RCOOH, DEHYD, SYNOZ', 
+  do_var_adv_tstp = T / 
+&nlGmiConvection
+  convec_opt = 3  /
+&nlGmiDeposition
+  do_drydep = T,
+  do_wetdep = T /
+&nlGmiDiffusion
+  diffu_opt = 1,
+  vert_diffu_coef = 1.0d0  /
+&nlGmiEmission
+  emiss_opt    = 2,
+  emiss_in_opt = 2,
+  emiss_conv_flag = 0,
+  semiss_inchem_flag = -1,
+  emiss_timpyr = 12,
+  emiss_var_name =  'emiss',
+  emiss_infile_name = 'input-2x2.5/Aura_Harvard_2004_Emissions_ship.nc',
+  do_ShipEmission   =   F,
+  emissionSpeciesNames = 'xxx, xxx, NO, NO, NO, NO, NO, CO, CO, CO, MEK, MEK, MEK, PRPE, PRPE, PRPE, C2H6, C2H6, C2H6, C3H8, C3H8, C3H8, ALK4, ALK4, ALK4, ALD2, ALD2, CH2O, CH2O, xxx, xxx, xxx, xxx, xxx, xxx',
+  isop_scale(1:12) = 1., 1., 1., 1., 1., 1.,	
+                     1., 1., 1., 1., 1., 1.,	
+  fertscal_infile_name  = 'input-2x2.5/GMIfertscale_2x25_dao.asc'
+  light_infile_name     = 'input-2x2.5/lighttable.asc',
+  precip_infile_name    = 'input-2x2.5/GMIprecip_2x25_dao.asc'
+  soil_infile_name      = 'input-2x2.5/soiltype.asc',
+  isopconv_infile_name  = 'input-2x2.5/isopconvtable.asc',
+  monotconv_infile_name = 'input-2x2.5/monotconvtable.asc',
+  veg_infile_name       = 'input-2x2.5/GMIvegtype_2x25_dao.asc'
+  lai_infile_name       = 'input-2x2.5/GMIlai_2x25_dao.asc'
+  gcr_infile_name       = 'input-2x2.5/GCR_1970-2025_33.nc',
+  do_gcr        = F  /
+&nlGmiChemistry	
+  chem_opt = 2,	
+  do_chem_grp         = T,	
+  synoz_threshold = 150.0d-9,	
+  chem_cycle = 1.0d0,	
+  do_smv_reord = T,	
+  do_wetchem = F,	
+  loss_opt = 0,	
+  do_AerDust_Calc    = F,
+  AerDust_Effect_opt = 0,
+  forc_bc_opt       = 2,	
+  forc_bc_years     = 100,	
+  forc_bc_start_num = 34,	
+  forc_bc_kmin      = 1,	
+  forc_bc_kmax      = 2,	
+  forcedBcSpeciesNames = 'CFCl3, CF2Cl2, CFC113, CFC114, CFC115, CCl4, CH3CCl3, HCFC22, HCFC141b, HCFC142b, CF2ClBr, CF2Br2, CF3Br, H2402, CH3Br, CH3Cl, CH4, N2O', 
+  forc_bc_infile_name = 'input-2x2.5/wmo2002_ch4latvar_1970_2069.asc',
+  h2oclim_opt         = 2,
+  h2oclim_infile_name = 'input-2x2.5/h2o_ch4_clim_2%5x2x42_fvccm.nc',
+  sad_opt = 2,	
+  lbssad_opt          = 3,        
+  lbssad_infile_name  = 'input-2x2.5/sad_dbc_2%5x2x42_2000.nc' /
+&nlGmiPhotolysis	
+  phot_opt = 3,	
+  do_clear_sky = F,	
+  uvalbedo_opt = 2,	
+  uvalbedo_infile_name = 'input-2x2.5/uvalbedo.geos.2x2%5.ascii',
+  sfalbedo_opt = 3,
+  cross_section_file    = 'input-2x2.5/FJX_spec_06a.dat',
+  rate_file             = 'input-2x2.5/rat_JX_combo_v2.d',
+  T_O3_climatology_file = 'input-2x2.5/jx_atms.dat',
+  do_ozone_inFastJX = F ,	
+  fastj_opt = 1/	
+&nlGmiTracer	
+  tracer_opt = 0  /	
+&nlGmiLightning	
+/	

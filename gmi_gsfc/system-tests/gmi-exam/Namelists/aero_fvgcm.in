@@ -1,0 +1,130 @@
+&ESM
+  problem_name = 'aero_fvgcm',
+  timer_esm = 1,
+  NP_actm   = 15,
+  oneprcsr  = 0,
+  day0      = 1,
+  tbegin_days = 0.0d0,
+  tfinal_days = 1.0d0  /
+&ACTM_CONTROL
+  do_ftiming  = F,
+  NPI_actm    = 3,
+  NPJ_actm    = 5,
+  gmi_nborder = 4,
+  i1_gl       = 1,
+  i2_gl       = 72,
+  ju1_gl      = 1,
+  jv1_gl      = 1,
+  j2_gl       = 46,
+  k1_gl       = 1,
+  k2_gl       = 42,
+  num_species = 30,
+  start_hms   = 000000,
+  start_ymd   = 970101,
+  tdt = 3600.0d0,
+  loss_opt = 0,
+  leap_year_flag = -1  /
+&ACTM_INPUT
+  gmi_data_dir = 'gmi_data',
+  met_opt     = 3,
+  prs_dim_name = 'eta_dim',
+  met_grid_type  = 'A',
+  do_timinterp_met  = F,
+  met_infile_num = 1,
+  mrnum_in = 1,
+  met_infile_names(1)    = 'G4agcm_5x4x42_19940101.nc',
+  met_infile_names(2)    = 'G4agcm_5x4x42_19940102.nc',
+  mdt = 10800.0d0,
+  const_opt   = 2,
+  const_infile_name = 'fvGCM_sulf_ic.nc',
+  fixed_const_timpyr = 12,
+  fixed_const_map(1) = 26,
+  fixed_const_map(2) = 27,
+  fixed_const_map(3) = 28,
+  fixed_const_map(4) = 29,
+  fixed_const_infile_name = 'fixed_FVGCM_from_Mich.nc',
+  AerDust_Effect_opt = 0,
+  AerDust_infile_name = 'aerosols_2001_G4agcm_kg_per_m3.nc' /
+&ACTM_OUTPUT
+  pr_diag  = F,
+  pr_ascii = T,
+    pr_ascii1 = T,
+    pr_ascii2 = F,
+    pr_ascii3 = F,
+    pr_ascii4 = T,
+    pr_ascii5 = T,
+  ascii_out_n = 26,
+  pr_netcdf = T,
+  pr_const = T,
+  pr_psf = T,
+  pr_kel = T,
+  pr_mass = T,
+  pr_dry_depos = T,
+  pr_wet_depos = T,
+  pr_surf_emiss = T,
+  pr_sulf_src = T,
+  pr_metwater = T,
+  do_mean = T,
+  pr_flux = F,
+  pr_tend = F,
+  pr_qj = F,
+  pr_qj_o3_o1d = F,
+  pr_qj_opt_depth = F,
+  pr_qk = F,
+  pr_qqjk = F,
+  pr_nc_period_days   = 1.0d0,
+  col_diag_num = 0,
+  col_diag_period = 3600.d0 /
+&ACTM_RESTART
+  pr_restart = T,
+  pr_rst_period_days = 1.0d0,
+  rd_restart = F  /
+&ACTM_ADVEC
+  advec_opt = 1,
+  press_fix_opt = 2,
+  do_grav_set = T,
+  advec_flag_default = 1,
+  do_var_adv_tstp = T  /
+&ACTM_CONVEC
+  convec_opt = 3 /
+&ACTM_DEPOS
+  do_drydep = T,
+  do_wetdep = T  /
+&ACTM_DIFFU
+  diffu_opt = 1,
+  vert_diffu_coef = 1.0d0  /
+&ACTM_EMISS
+  emiss_opt = 1,
+  emiss_in_opt = 2,
+  emiss_conv_flag = 0,
+  emiss_timpyr = 12,
+  emiss_var_name =  'emiss',
+  semiss_inchem_flag = 0,
+  emiss_map(1) =  2,
+  emiss_map(2) =  3,
+  emiss_map(3) =  4,
+  emiss_infile_name = 'so2emi_4x5_fvGCM.nc',
+  emiss_dust_opt = 1,
+  ndust = 4,
+  nst_dust = 1,
+  nt_dust = 1460,
+  emiss_dust_infile_name = 'emiss_dust_new2_4x5_ann.nc',
+  emiss_map_dust(1:4) = 18, 19, 20, 21,
+  emiss_aero_opt = 1,
+  naero = 9,
+  emiss_aero_infile_name = 'emiss_carbon_sslt_4x5_ann.nc',
+  emiss_map_aero(1:9) = 13, 14, 15, 16, 17, 22, 23, 24, 25,
+  veg_infile_name   = 'vegtype_4x5.asc',
+  lai_infile_name   = 'lai_4x5.asc',  
+  gcr_infile_name    = 'GCR_1970-2025_33.nc',
+  do_gcr        = F  /
+&ACTM_CHEM
+  chem_opt = 8,
+  aqua_infile_name = 'seasalt.75RH',
+  sad_opt = 0 /
+&ACTM_PHOT
+  phot_opt = 7,
+  do_clear_sky = F,
+  qj_infile_name = 'qjh2o2_2d4x5.nc' /
+&ACTM_TRAC
+  tracer_opt             = 0 / 

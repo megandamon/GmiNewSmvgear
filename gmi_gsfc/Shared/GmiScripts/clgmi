@@ -1,0 +1,60 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill , LLNL     , jrt@llnl.gov
+#   Jules Kouatchou, NASA/GSFC, Jules.Kouatchou-1@nasa.gov
+#
+# FILE
+#   clgmi (clean gmi)
+#
+# DESCRIPTION
+#   This script deletes a number of the files created when gmi is run.
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use English;
+
+
+my $script_name = "clgmi";
+
+my $file;
+
+
+opendir THISDIR, "." or
+  die "\nIn $script_name, cannot open current directory:\n  $OS_ERROR\n\n";
+my @files = readdir THISDIR;
+closedir THISDIR;
+
+foreach $file (@files) {
+
+  if (($file =~ /gmi_nl_actm/)    ||
+      ($file =~ /gmi_nam_esm/)    ||
+      ($file =~ /core/)           ||
+      ($file =~ /core\..*/)       ||
+      ($file =~ /DB.err/)         ||
+      ($file =~ /dset_error.out/) ||
+      ($file =~ /mppcore/)        ||
+      ($file =~ /restart_.*/)     ||
+
+      ($file =~ /input.uci/)      ||
+      ($file =~ /output.uci/)     ||
+      ($file =~ /UCI_write/)      ||
+      ($file =~ /uci.pch/)        ||
+      ($file =~ /uci.unf/)        ||
+
+      ($file =~ /smv2.out/)) {
+
+    unlink ($file);
+  }
+}
+
+`/bin/rm -fr esm_log_*`;
+
+
+exit 0;
+

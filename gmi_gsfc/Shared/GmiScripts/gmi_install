@@ -1,0 +1,924 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   gmi_install
+#
+# DESCRIPTION
+#   This script does a complete installation of a Gem/Gmimod tar file on
+#   selected machines.
+#
+#   For basic installation, just type gmi_install (make sure that you have
+#   execute privilege on the file), and follow the directions.
+#
+#   Usage:  gmi_install [-nountar] [-notest]
+#             -nountar:  skips untarring the tar file
+#             -notest:   don't run the validation tests
+#
+# SUBROUTINES
+#   select_machine_arch
+#   select_debug_option
+#   select_addi_trans_schemes
+#   select_chem_solvers
+#   select_chem_setkin
+#   untar_tar_file
+#   edit_gmi_sys
+#   edit_gmi
+#   compile_code
+#   check_gmit4
+#   run_tests
+#
+#=============================================================================
+#
+ 
+use strict;
+#use diagnostics;
+use English;
+use Env;
+
+
+print "\n";
+
+my $script_name  = "gmi_install";
+
+my $err          = 0;
+
+my $arch_env     = $ENV{ARCHITECTURE};
+my $gmi_home     = $ENV{GMIHOME};
+my $host_machine = $ENV{HOSTMACH};
+
+
+if ($gmi_home eq "") {
+  print "GMIHOME ENVIRONMENT VARIABLE IS NOT SET; EXITING.\n\n";
+  #=====
+  exit 1;
+  #=====
+}
+
+if ($arch_env eq "") {
+  print "ARCHITECTURE ENVIRONMENT VARIABLE IS NOT SET; EXITING.\n\n";
+  #=====
+  exit 1;
+  #=====
+}
+
+
+#------------------------
+# Get & check arguments.
+#------------------------
+ 
+my $do_untar = 1;
+my $do_tests = 1;
+ 
+
+if ($#ARGV > 1) {
+  $err = 1;
+  print "TOO MANY ARGUMENTS IN $script_name; EXITING.\n\n";
+}
+else {
+  XARGS: while (@ARGV) {
+    if    ($ARGV[0] =~ "-nountar") { $do_untar = 0; }
+    elsif ($ARGV[0] =~ "-notest")  { $do_tests = 0; }
+    else {
+      $err = 1;
+      print "UNRECOGNIZED ARGUMENT IN $script_name:  $ARGV[0]; EXITING.\n\n";
+      #=========
+      last XARGS;
+      #=========
+    }
+    shift @ARGV;
+  }
+}
+
+if ($err) {
+  print "Usage:  $script_name [-nountar] [-notest]\n";
+  print "  -nountar:  skips untarring the tar file\n";
+  print "  -notest:   don't run the validation tests\n";
+  print "\n";
+  print "For basic installation, just type gmi_install (make sure\n";
+  print "that you have execute privilege on the file), and follow\n";
+  print "the directions.\n\n";
+  #=====
+  exit 1;
+  #=====
+}
+
+
+#-----------------
+# Get user input.
+#-----------------
+
+my @arch_choices  =
+  qw(ARCH_COMPAQ ARCH_CRAY ARCH_IBM_SP ARCH_INTEL ARCH_SGI_ORIG ARCH_T3E);
+my @arch_examples =
+  ("halem, tckk", "tbd", "cheetah, frost, seaborg", "mcr, pengra", "jimpf0", "tbd");
+my $arch_default  = 3;
+
+                #==================
+my $arch_pick = select_machine_arch
+                #==================
+                  ($arch_default, $#arch_choices,
+                   @arch_choices, @arch_examples);
+ 
+if ($arch_pick ne $arch_env) {
+  print "  SELECTED MACHINE ARCHITECTURE IS NOT EQUAL TO THE ARCHITECTURE\n";
+  print "  ENVIRONMENT VARIABLE:  $arch_env; EXITING.\n\n";
+  #=====
+  exit 1;
+  #=====
+}
+
+
+               #==================
+my $do_debug = select_debug_option ( );
+               #==================
+
+
+my @trans_choices = ();
+my @trans_picks   = ();
+
+###if (($arch_pick eq "ARCH_CRAY") || ($arch_pick eq "ARCH_SUN4")) {
+###  @trans_choices = qw(UCITRANS);
+###}
+
+###if ($#trans_choices >= 0) {
+###                   #========================
+###   @trans_picks  = select_addi_trans_schemes (@trans_choices);
+###                   #========================
+###}
+
+###@trans_choices = qw(UCITRANS);
+
+
+my @chem_choices = qw(SMV2CHEM);
+my @chem_picks   = ();
+
+              #==================
+@chem_picks = select_chem_solvers (@chem_choices);
+              #==================
+
+
+my $setkin = "";
+
+if ($#chem_picks >= 0) {
+            #=================
+  $setkin = select_chem_setkin ( );
+            #=================
+}
+
+
+if ($do_untar) {
+  #=============
+  untar_tar_file ($setkin);
+  #=============
+}
+
+
+#---------------------
+# Edit options files.
+#---------------------
+
+my $gmi_sys_file = "$gmi_home/include/gmi_sys_options.h";
+my $gmi_file     = "$gmi_home/include/gmi_options.h";
+
+#===========
+edit_gmi_sys ($gmi_sys_file, $arch_pick);
+#===========
+
+#========
+edit_gmi
+#========
+  ($gmi_file, $do_debug, $#trans_choices, $#trans_picks, $#chem_choices,
+   @trans_choices, @trans_picks, @chem_choices, @chem_picks);
+
+
+#---------------------
+# Compile & link code.
+#---------------------
+
+           #===========
+my $good = compile_code ($arch_pick, $gmi_home);
+           #===========
+
+
+#-----------
+# Run tests.
+#-----------
+
+if ($good && $do_tests) {
+
+  my $test_dir = "";
+  my @tests    = ();
+
+  if ($arch_pick eq "ARCH_CRAY") {
+    $test_dir = "$gmi_home/actm/gmimod/Other/test/nopar";
+  }
+  else {
+    $test_dir = "$gmi_home/actm/gmimod/Other/test/par";
+  }
+
+                     #==========
+  my $setkin_gmit4 = check_gmit4 ($gmi_home);
+                     #==========
+
+  if (($setkin_gmit4)      &&
+      ($#chem_picks >= 0)  &&
+      ($setkin      eq "") &&  # i.e., setkin files not replaced
+      ($arch_pick   ne "ARCH_CRAY") &&
+      ($arch_pick   ne "ARCH_T3E")) {
+    @tests = qw(tracer harvemiss radon beryl coldiag pfix fullchem);
+  }
+  else {
+    @tests = qw(tracer harvemiss radon beryl coldiag pfix);
+  }
+
+             #========
+  my $good = run_tests ($test_dir, @tests);
+             #========
+}
+
+
+chdir $gmi_home;
+
+
+if ($good) {
+
+###  if ($arch_pick eq "ARCH_SUN4") {
+###    print "----------------------------------------------------------\n";
+###    print "Sun4 memory limitations may preclude running grids larger\n";
+###    print "  than 4x5 degree, 46 level, one-constituent cases.\n";
+###    print "Suitable replacements for UNICOS library Fourier transform\n";
+###    print "  routines fftfax and rfftmlt need to be found for\n";
+###    print "  do_convert_atoc = T.\n";
+###    print "----------------------------------------------------------\n\n";
+###  }
+
+  print "\n";
+  print "------------------------\n";
+  print "Installation successful.\n";
+  print "------------------------\n\n";
+
+# $date_shell = `/bin/date`;
+# print "$date_shell\n";
+
+  #=====
+  exit 0;
+  #=====
+}
+else {
+
+  print "\n";
+  print "==========================\n";
+  print "INSTALLATION UNSUCCESSFUL\!\n";
+  print "==========================\n\n";
+
+  #=====
+  exit 1;
+  #=====
+}
+
+
+#################################
+# End main; subroutines follow. #
+#################################
+
+
+#----------------------
+sub select_machine_arch {
+#----------------------
+
+  my $arch_default = shift @ARG;
+
+  my $nach = shift @ARG;
+
+  my $i;
+  for ($i = 0; $i<=$nach; $i++) { shift @ARG, push (my @arch_choices);  }
+  for ($i = 0; $i<=$#ARG; $i++) { shift @ARG, push (my @arch_examples); }
+
+  my $arch_index;
+  my $err;
+  my $k;
+
+
+  print "============================\n";
+  print "MACHINE ARCHITECTURE OPTIONS =>\n";
+  print "============================\n";
+
+  print "  Select a machine architecture by entering its numeric index";
+  print " (default: $arch_default).\n";
+
+  for ($i = 0; $i <= $#arch_choices; $i++) {
+    my $j = $i + 1;
+    if ($i == 0) { print "  ["; }
+    else         { print "   "; }
+    print "$j=>$arch_choices[$i]";
+    my @chars = split //, $arch_choices[$i];
+    for ($k = 0; $k <= (13 - $#chars); $k++) {
+     print " ";
+    }
+    print "(e.g., $arch_examples[$i])";
+    if ($i != $#arch_choices) { print ",\n"; }
+    else                      { print "]\n"; }
+  }
+
+  print "    ?:  ";
+  my $response = <STDIN>;
+  chomp $response;
+  print "\n";
+
+  if    ($response eq "") {
+    $arch_index = $arch_default - 1;
+  }
+  elsif (($response lt "1") || ($response gt "9")) {
+    $err = 1;
+  }
+  elsif ($response > ($#arch_choices + 1)) {
+    $err = 1;
+  }
+  else {
+    $arch_index = $response - 1;
+  }
+
+  if ($err) {
+    print "  IMPROPER CHOICE OF MACHINE ARCHITECTURE OPTION: ";
+    print "  $response; EXITING.\n\n";
+    #=====
+    exit 1;
+    #=====
+  }
+
+  print "  Selected machine architecture is $arch_choices[$arch_index].\n\n";
+
+  return $arch_choices[$arch_index];
+}
+
+
+#----------------------
+sub select_debug_option {
+#----------------------
+
+  my $do_debug;
+
+
+  print "============\n";
+  print "DEBUG OPTION =>\n";
+  print "============\n";
+
+  print "  Enter y|Y if you want to compile in debug mode (default: n|N).\n";
+
+  print "    ?:  ";
+  my $response = <STDIN>;
+  chomp $response;
+  print "\n";
+
+  if (($response eq "y") || ($response eq "Y")) {
+    $do_debug = 1;
+    print "  WILL compile in debug mode.\n\n";
+  }
+  else {
+    $do_debug = 0;
+  }
+
+  return $do_debug;
+}
+
+
+#----------------------------
+sub select_addi_trans_schemes {
+#----------------------------
+
+  my @trans_choices = @ARG;
+
+  my $i;
+  my $trans_pick;
+  my @trans_picks   = ();
+
+
+  print "============================\n";
+  print "ADDITIONAL TRANSPORT SCHEMES =>\n";
+  print "============================\n";
+
+  print "  You will always get any of the general operators you choose\n";
+  print "  in the namelist input file (e.g., Lin-Rood advection), but there\n";
+  print "  are other complete transport codes that are available should you\n";
+  print "  want to compile and make use of them.\n\n";
+  print "  Enter y|Y if you want the additional transport scheme compiled\n";
+  print "    (default: n|N).\n";
+
+
+  for ($i = 0; $i <= $#trans_choices; $i++) {
+
+    if ($i == 0) { print "  ["; }
+    print "$trans_choices[$i]";
+    if ($i != $#trans_choices) { print ", ";  }
+    else                       { print "]\n"; }
+  }
+
+  for ($i = 0; $i <= $#trans_choices; $i++) {
+
+    print "    $trans_choices[$i]?:  ";
+    if ($trans_choices[$i] eq "UCITRANS") { print " "; }
+
+    my $response = <STDIN>;
+    chomp $response;
+    if (($response eq "y") || ($response eq "Y")) {
+      push @trans_picks, $trans_choices[$i];
+    }
+
+    if ($i == $#trans_choices) { print "\n"; }
+  }
+
+  if ($#trans_picks >= 0) { print "  WILL compile:  "; }
+
+  for ($i = 0; $i <= $#trans_picks; $i++) {
+    print "$trans_picks[$i]";
+    if ($i != $#trans_picks) { print ", ";    }
+    else                     { print ".\n\n"; }
+  }
+
+  return @trans_picks;
+}
+
+
+#----------------------
+sub select_chem_solvers {
+#----------------------
+
+  my @chem_choices = @ARG;
+
+  my $chem_pick;
+  my @chem_picks   = ();
+  my $i;
+
+
+  print "========================\n";
+  print "CHEMISTRY SOLVER OPTIONS =>\n";
+  print "========================\n";
+
+  print
+    "  Enter n|N if you do not want the chem solver compiled (default: y|Y).\n";
+
+  for ($i = 0; $i <= $#chem_choices; $i++) {
+
+    if ($i == 0) { print "  ["; }
+    print "$chem_choices[$i]";
+    if ($i != $#chem_choices) { print ", "; }
+    else                      { print "]\n"; }
+  }
+
+  for ($i = 0; $i <= $#chem_choices; $i++) {
+
+    print "    $chem_choices[$i]?:  ";
+
+    my $response = <STDIN>;
+    chomp $response;
+    if (($response ne "n") && ($response ne "N")) {
+      push @chem_picks, $chem_choices[$i];
+    }
+
+    if ($i == $#chem_choices) { print "\n"; }
+  }
+
+  if ($#chem_picks >= 0) { print "  WILL compile:  "; }
+
+  for ($i = 0; $i <= $#chem_picks; $i++) {
+    print "$chem_picks[$i]";
+    if ($i != $#chem_picks) { print ", ";    }
+    else                    { print ".\n\n"; }
+  }
+
+  return @chem_picks;
+}
+
+
+#---------------------
+sub select_chem_setkin {
+#---------------------
+
+  my $setkin     = "";
+
+  my $default    = "";
+  my $do_replace;
+  my $file;
+
+
+  print "=========================\n";
+  print "SELECT CHEMICAL MECHANISM =>\n";
+  print "=========================\n";
+
+  print
+    "  Enter y|Y if you have a setkin tar file and want to replace the\n";
+  print
+    '    provided setkin chemical mechanism, "GMIT4" (default: n|N).', "\n";
+
+
+  print "    ?:  ";
+  my $response = <STDIN>;
+  chomp $response;
+  print "\n";
+
+  if (($response eq "y") || ($response eq "Y")) { $do_replace = 1; }
+  else { $do_replace = 0; }
+ 
+  if ($do_replace == 1) {
+
+    opendir Thisdir, ".";
+    my @allfiles = readdir Thisdir;
+    closedir Thisdir;
+
+    FLOOP: foreach $file (@allfiles) {
+      if ($file =~ "setkin.*\.tar") {
+        $default = $file;
+        last FLOOP;
+      }
+    }
+
+    if ($default ne "") {
+      print "  Enter the setkin tar file name (default: $default).\n";
+    }
+    else {
+      print "  Enter the setkin tar file name.\n";
+    }
+    print "    ?:  ";
+
+    $setkin = <STDIN>;
+    chomp $setkin;
+    print "\n";
+
+    if ($setkin eq "") { $setkin = $default; }
+
+    print "  WILL replace the setkin files with $setkin.\n\n";
+
+  }
+
+  return $setkin;
+}
+
+
+#-----------------
+sub untar_tar_file {
+#-----------------
+
+  my $setkin = shift;
+
+  my $default = "";
+  my $file;
+ 
+
+  print "====================\n";
+  print "GMIMOD TAR FILE NAME =>\n";
+  print "====================\n";
+
+  opendir Thisdir, ".";
+  my @allfiles      = readdir Thisdir;
+  my @sort_allfiles = sort (@allfiles);
+  my @rev_allfiles  = reverse (@sort_allfiles);
+  closedir Thisdir;
+
+  FLOOP: foreach $file (@rev_allfiles) {
+    if (($file =~ "ggmi.*\.tar") &&
+        ($file !~ "\.gz")        &&
+        ($file !~ "\.Z")) {
+      $default = $file;
+      last FLOOP;
+    }
+  }
+
+  if ($default ne "") {
+    print "  Enter the Gmimod tar file name (default: $default).\n";
+  }
+  else {
+    print "  Enter the Gmimod tar file name.\n";
+  }
+  print "    ?:  ";
+
+  my $tar_file = <STDIN>;
+  chomp $tar_file;
+  print "\n";
+
+  if ($tar_file eq "") { $tar_file = $default };
+
+  print "  Gmimod tar file name is set to $tar_file.\n\n\n";
+ 
+  if (-e "gmi") {
+    rename "gmi", "gmi.$PID";
+    print "Gem directory already exists, moved it to gmi.$PID.\n\n"
+  }
+
+  if (-e $tar_file) {
+    print "Untarring $tar_file.\n\n";
+    `/bin/tar xf $tar_file`;
+    my $version_file = "$gmi_home/version.doc";
+    print "Creating $version_file.\n\n";
+    open (OUTFIL, "> $version_file") or
+      die "\nIn $script_name, cannot open file $version_file:\n  $OS_ERROR\n\n";
+    print OUTFIL $tar_file;
+    close (OUTFIL);
+  }
+  else {
+    print "$tar_file DOES NOT EXIST; EXITING.\n\n";
+    #=====
+    exit 1;
+    #=====
+  }
+
+  if ($setkin ne "") {
+
+    if (-e $setkin) {
+      print "Untarring $setkin.\n\n";
+      my $sav_dir = `pwd`;
+      chomp $sav_dir;
+      chdir "$gmi_home/actm/gmimod/chem";
+      `/bin/tar xf $sav_dir/$setkin`;
+      `/bin/touch include_setkin/*.h`;
+      `/bin/touch setkin/*.F`;
+      chdir "$sav_dir";
+    }
+    else {
+      print "$setkin DOES NOT EXIST; EXITING.\n\n";
+      #=====
+      exit 1;
+      #=====
+    }
+
+  }
+
+}
+
+
+#---------------
+sub edit_gmi_sys {
+#---------------
+
+  my $gmi_sys_file = shift;
+  my $arch_pick    = shift;
+
+  my @fields = ();
+  my $line;
+  my @lines  = ();
+
+
+  print "Editing $gmi_sys_file.\n\n";
+
+
+  open (INFIL,  "< $gmi_sys_file") or
+    die "\nIn $script_name, cannot open file $gmi_sys_file:\n  $OS_ERROR\n\n";
+  @lines = <INFIL>;
+  close (INFIL);
+
+ 
+  foreach $line (@lines) {
+
+    if (($line =~ "#define") && ($line =~ "ARCH_OPTION")) {
+      @fields    = split " ", $line;
+      $fields[2] = "$arch_pick";
+      $line  = (join " ", @fields) . "\n";
+    }
+  }
+
+
+  open (OUTFIL, "> $gmi_sys_file") or
+    die "\nIn $script_name, cannot open file $gmi_sys_file:\n  $OS_ERROR\n\n";
+  print OUTFIL @lines;
+  close (OUTFIL);
+
+}
+
+
+#-----------
+sub edit_gmi {
+#-----------
+
+  my $gmi_file = shift @ARG;
+  my $do_debug = shift @ARG;
+
+  my $ntch = shift @ARG;
+  my $ntpi = shift @ARG;
+  my $ncch = shift @ARG;
+
+  my $i;
+  for ($i = 0; $i<=$ntch; $i++) { shift @ARG, push (my @trans_choices); }
+  for ($i = 0; $i<=$ntpi; $i++) { shift @ARG, push (my @trans_picks);   }
+  for ($i = 0; $i<=$ncch; $i++) { shift @ARG, push (my @chem_choices);  }
+  for ($i = 0; $i<=$#ARG; $i++) { shift @ARG, push (my @chem_picks);    }
+
+  my $chem_choice;
+  my $chem_pick;
+
+  my $line;
+
+  my $trans_choice;
+  my $trans_pick;
+
+
+  print "Editing $gmi_file.\n\n";
+
+
+  open (INFIL,  "< $gmi_file") or
+    die "\nIn $script_name, cannot open file $gmi_file:\n  $OS_ERROR\n\n";
+  my @lines = <INFIL>;
+  close (INFIL);
+
+ 
+  XLINE: foreach $line (@lines) {
+
+    if (($line !~ "#define") && ($line !~ "#undef")) {
+      #=========
+      next XLINE;
+      #=========
+    }
+
+    if    ($line =~ "AGCM_Package") { $line =~ s/[0-9]/0/; }
+    elsif ($line =~ "ACTM_Package") { $line =~ s/[0-9]/1/; }
+
+    elsif ($line =~ "Debug_Option") {
+      if ($do_debug) { $line =~ s/0/1/; }
+      else           { $line =~ s/1/0/; }
+    }
+
+    elsif ($line =~ "Optimization_Option") {
+      if ($do_debug) { $line =~ s/1/0/; }
+      else           { $line =~ s/0/1/; }
+    }
+
+    else {
+
+      my $found = 0;
+
+      foreach $trans_choice (@trans_choices) {
+        if ($line =~ "$trans_choice") {
+          XTPICK: foreach $trans_pick (@trans_picks) {
+            if ($trans_pick eq $trans_choice) {
+              $found = 1;
+              $line  =~ s/undef /define/;
+              #==========
+              last XTPICK;
+              #==========
+            }
+          }
+          if (! $found) { $line =~ s/define/undef /; }
+        }
+      }
+  
+      if (! $found) {
+        foreach $chem_choice (@chem_choices) {
+          if ($line =~ "$chem_choice") {
+            XCPICK: foreach $chem_pick (@chem_picks) {
+              if ($chem_pick eq $chem_choice) {
+                $found = 1;
+                $line  =~ s/undef /define/;
+                #==========
+                last XCPICK;
+                #==========
+              }
+            }
+            if (! $found) { $line =~ s/define/undef /; }
+          }
+        }
+      }
+    }
+  }
+
+
+  open (OUTFIL, "> $gmi_file") or
+    die "\nIn $script_name, cannot open file $gmi_file:\n  $OS_ERROR\n\n";
+  print OUTFIL @lines;
+  close (OUTFIL);
+
+}
+
+
+#---------------
+sub compile_code {
+#---------------
+
+  my $arch_pick = shift;
+  my $gmi_home  = shift;
+
+  my $good;
+
+
+  print "Compiling and linking the code.\n\n";
+
+
+  chdir $gmi_home;
+
+  if ($arch_pick eq "ARCH_IBM_SP") {
+    `make -f $gmi_home/include/Makefile.init.sp  Makefile`;
+  }
+  elsif ($arch_pick eq "ARCH_INTEL") {
+    `make -f $gmi_home/include/Makefile.init.int Makefile`;
+  }
+  else {
+    `make -f $gmi_home/include/Makefile.init     Makefile`;
+  }
+
+  `make`;
+
+  print "\n";
+  if (-e "$gmi_home/bin/gmi") {
+    $good = 1;
+    print "------------------------\n";
+    print "Compile/Link successful.\n";
+    print "------------------------\n\n";
+  }
+  else {
+    $good = 0;
+    print "====================\n";
+    print "COMPILE/lINK FAILED\!\n";
+    print "====================\n\n";
+  }
+
+  return $good;
+}
+
+
+#--------------
+sub check_gmit4 {
+#--------------
+
+  my $gmi_home = shift;
+
+  my $setkin_gmit4;
+
+  my $line;
+
+  my $found_nsp  = 0;
+  my $found_numj = 0;
+  my $found_numk = 0;
+
+  my $setkin_par = "$gmi_home/actm/gmimod/chem/include_setkin/setkin_par.h";
+
+
+  open (INFIL,  "< $setkin_par") or
+    die "\nIn $script_name, cannot open file $setkin_par:\n  $OS_ERROR\n\n";
+  my @lines = <INFIL>;
+  close (INFIL);
+
+ 
+  XLINE: foreach $line (@lines) {
+
+    if (($line !~ "NSP") && ($line !~ "NUM_J") && ($line !~ "NUM_K")) {
+      #=========
+      next XLINE;
+      #=========
+    }
+
+    if    (($line =~ "NSP")   && ($line =~ "86"))  { $found_nsp  = 1; }
+    elsif (($line =~ "NUM_J") && ($line =~ "50"))  { $found_numj = 1; }
+    elsif (($line =~ "NUM_K") && ($line =~ "224")) { $found_numk = 1; }
+
+  }
+
+  if ($found_nsp && $found_numj && $found_numk) {
+    $setkin_gmit4 = 1;
+  }
+  else {
+    $setkin_gmit4 = 0;
+  }
+
+  return $setkin_gmit4;
+}
+
+
+#------------
+sub run_tests {
+#------------
+
+  my $test_dir = shift;
+  my @tests    = @ARG;
+
+  my $test;
+
+
+  $good = 1;
+
+  chdir $test_dir;
+
+  print "---------------------------------\n";
+  print "Validation tests will now be run.\n";
+  print "---------------------------------\n";
+
+  XTEST: foreach $test (@tests) {
+
+    my $status = system ($test_dir . "/run_" . $test . "_test");
+
+    if ($status != 0) {
+      $good = 0;
+      print "$test FAILED\!\n\n";
+      #=========
+      last XTEST;
+      #=========
+    }
+
+  }
+
+  return $good;
+
+}
+

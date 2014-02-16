@@ -1,0 +1,30 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+#
+# CODE DEVELOPER
+#   Jules Kouatchou, NASA/GSFC, Jules.Kouatchou-1@nasa.gov
+#
+# FILE
+#   list_species
+#
+# DESCRIPTION
+#   This script lists all the species labels for the selected
+#   chemical mechanism (environment variable CHEMCASE).
+#
+#   Usage:  list_species
+#
+#=============================================================================
+#
+
+@ err = 0
+
+echo " "
+echo "All species labels"
+echo " "
+
+(cd $GMIHOME/Components/GmiChemistry/mechanisms/$CHEMCASE/include_setkin; grep "data lchemvar" setkin_lchem.h | sed 's@data lchemvar@lchemvar@g')
+
+exit $err
+

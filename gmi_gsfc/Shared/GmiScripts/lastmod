@@ -1,0 +1,85 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   lastmod
+#
+# DESCRIPTION
+#   This script lists all GMI files in reverse order of when they were
+#   last modified.  It is useful for determining which routines a user has
+#   modified since they last installed the code.
+#
+#   NOTE THAT CHANGES TO ANY Makefile.cpp FILES ARE NOT INCLUDED IN THIS LIST!
+#   Use the lastmod_all script to have the Makefile.cpp files included as
+#   well.
+#
+#   Usage:  lastmod [tail_num]
+#
+#=============================================================================
+#
+
+
+if ($#argv == 0) then
+
+  @ tailnum = 10000
+
+else if ($#argv == 1) then
+
+  @ tailnum = $argv[1]
+
+else
+
+  echo ""
+  echo "Usage:  $0 [tail_num]"
+  echo ""
+  exit
+
+endif
+
+
+/bin/ls -ltrR $GMIHOME | \
+/bin/grep -v  '^$'     | \
+/bin/grep -v  '^d'     | \
+/bin/grep -v  '^/'     | \
+/bin/grep -v  '\.T$'   | \
+/bin/grep -v  '\.a$'   | \
+/bin/grep -v  '\.F90$'   | \
+/bin/grep -v  '\.l$'   | \
+/bin/grep -v  '\.mod$' | \
+/bin/grep -v  '\.o$'   | \
+/bin/grep -v  '\.rif$' | \
+/bin/grep -v  'Makefile$'      | \
+/bin/grep -v  'Makefile\.bak$' | \
+/bin/grep -v  'Makefile\.cpp$' | \
+/bin/grep -v  'Mkdepend_log$'  | \
+/bin/grep -vw '2001'   | \
+/bin/grep -vw 'gem$'   | \
+/bin/grep -vw '^total' | \
+/bin/sed  's/Jan/01/g' | \
+/bin/sed  's/Feb/02/g' | \
+/bin/sed  's/Mar/03/g' | \
+/bin/sed  's/Apr/04/g' | \
+/bin/sed  's/May/05/g' | \
+/bin/sed  's/Jun/06/g' | \
+/bin/sed  's/Jul/07/g' | \
+/bin/sed  's/Aug/08/g' | \
+/bin/sed  's/Sep/09/g' | \
+/bin/sed  's/Oct/10/g' | \
+/bin/sed  's/Nov/11/g' | \
+/bin/sed  's/Dec/12/g' | \
+/bin/sort -k 6,6 -k 7,7 -k 8,8 | \
+tail -$tailnum
+
+echo ""
+echo "NOTE THAT CHANGES TO ANY Makefile.cpp FILES ARE NOT REFLECTED IN THE"
+echo "LIST ABOVE\!"
+echo ""
+
+
+exit
+

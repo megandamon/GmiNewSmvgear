@@ -1,0 +1,217 @@
+________________________________________________________________________________
+
+Tentatively planned 11/27/2005 Code Flow for the First Prototype mix of
+Interactive and Batch "gmi-exam" scripts that Build/Run Standardized GMI Tests
+________________________________________________________________________________
+
+gmi-exam-cvs-co  gmiroot  ( where gmiroot is something like /scr/$USER/GMIexam )
+
+gmi-exam-all-tests  gmiroot  (Ultimate Build/Run driver to be written later)
+|
++-gmi-exam-builder gmiroot chemfile (makes gem binaries requested by "chemfile")
+| |
+| +-Builds/chemfile-script-time  >>  Builds/chemfile-result-time
+|   |
+|   +-gmi-exam-setenv  (prepares C Shell environment before make(s) of gem code)
+|   |
+|   +-mkmf    (executed once for each chemistry type requested)
+|
++-gmi-exam-launcher gmiroot chemfile  (runs chem. types requested by "chemfile")
+  |
+  +-Test-jobs/chemfile-script-time  >>  Test-jobs/chemfile-result-time
+  | |
+  | +-gmi-exam-driver gmiroot chemtype time (prepares code for a given chemtype)
+  |   |
+  |   +-zdriver-script-time  >>  zdriver-result-time
+  |     |
+  |     +-gmi-exam-runner gmiroot chemtype testname time (used for unique tests)
+  |       |
+  |       +-gmi-exam-logger  gmiroot  time  'WAITING'  chemtype/testname
+  |       |
+  |       +-bsub < Test-jobs/chemtype/testname/zscript-time
+  |         |
+  |         +-gmi-exam-logger gmiroot time (SUCCESS | FAILURE) chemtype/testname
+  |
+  +-Test-jobs/chemfile-wrapup-time  (started via "at" after a 2 minute delay)
+    |
+    +-gmi-exam-monitor   gmiroot  time  mailme   (mailme is used for batch work)
+      |
+      +-gmi-exam-status  gmiroot  time  mailme   (mailme is used for batch work)
+
+________________________
+
+ABOUT THIS FLOW DIAGRAM:
+________________________
+
+This README.flow file is accompanied by a more detailed README file.  This file is focused on code flow.  Please read both documents before using these scripts.
+
+This diagram presents a "shorthand view" of the flow of execution in a chain of scripts which contain quite a bit of "cloned code".  They were written in a
+short timeframe using a limited amount of design planning and internal comments.
+
+As a result, many arguments will be passed down the chain in a manner that
+appears to be redundant, but may actually serve a unique purpose.  Some modules
+are designed to allow them to be started independently, especially at times when
+we may want to rerun one portion without launching the whole chain of scripts.
+
+The objective in writing the "gmi-exam" programs was to provide a way to easily
+build and run a series of standardized GMI test cases.  An emphasis was placed
+on quickly completing a prototype to achieve this, with the understanding that
+many aspects of the code and test cases may be refined and redesigned later.
+
+The overall strategy used by the author of these modules was to prepare a basic
+skeleton of a directory structure that will be expanded/populated "on the fly"
+as programs run one or more test cases for one or more chemistry types defined
+by the input files that each user of the code can manipulate independently.
+
+
+You begin by interactively running gmi-exam-cvs-co to check out the "gem" code
+from the GMI CVS repository.  If that goes well, this script will advise you to
+run a follow up command that will check out the suite of "gmi-exam" programs.
+
+After completing that, you can can build binaries and run all tests by invoking:
+
+gmi-exam-builder  ...which... Builds one or more flavors of "gem" executables.
+and
+gmi-exam-launcher ...which... Executes one or more standardized GMI test cases.
+
+
+The upper level scripts build other scripts "on the fly" to accomplish this.
+
+The number of scripts and types of test cases to be executed is controlled by
+input files, which the user may manipulate (prior to the build/launch) if they
+are not interested in running all of the tests.  In the above calls to the
+builder and launcher scripts, you see a reference to "chemfile".  This is an
+input file written in a specific format which provides the names of each
+chemistry type to be used when building/executing gem binaries for each type. 
+
+Since these programs are designed to help validate the GMI code following
+various upgrades, there are "pre-defined" input files in the repository that
+are primed to run all test cases of all chemistry types for which we have
+developed standardized GMI tests that produce predictable ASCII output results.
+
+The upper level scripts read one main input file to determine which
+chemistry types will be tested, and will build subdirectories and
+low level scripts to be used for each of those chemistry types.
+
+Similarly, those low level scripts will build even lower level subdirectories
+and scripts to run the test case(s) selected for each chemistry type.
+Additional input files are read that identify the tests for each chemistry type.
+
+The above diagram attempts to convey the flow of the code and provide a
+rough sketch of the types of arguments that are passed from script to script.
+
+Scripts and output files that are built "on the fly" will contain a timestamp
+that is part of their file name.  This provides an easy way to document when
+the tests were launched and may be helpful if you wish to rerun the launcher
+routine to run tests with different data (while leaving executables intact).
+
+A subdirectory named "gmi-exam" contains the entire suite of "gmi-exam" programs
+as well as subdirectories that contain the input files and output results.  This
+structure will grow as the automated scripts begin to build and populate trees
+of data under subdirectores named "Builds" and "Test-jobs".  The input files
+controlling which tests will be run are stored in the directory "Test-plans".
+
+
+As of 11/27/2005, there were 3 basic routines that you must invoke interactively
+if you wish download, build, and run all the code and tests cases.  You choose a
+non-existent directory we will refer to as the "gmiroot", which you might call:
+
+/scr/$USER/GMIexam
+
+You can then download gmi-exam-cvs-co from sourcemotel via your browser and run:
+
+./gmi-exam-cvs-co   /scr/$USER/GMIexam
+
+This will store the "gem" directory tree in:
+
+/scr/$USER/GMIexam/gem
+
+...and...you will be given another command you can paste in to create this:
+
+/scr/$USER/GMIexam/system-tests/gmi-exam
+
+Scripts "know where to find" that code/data based on the input of a "gmiroot".
+
+
+After downloading the "gem" and "gmi-exam" code,
+you can run the gmi-exam-builder script, which at this time, has not yet been
+automated to spawn batch jobs that compile each flavor of gem executable.  It is
+anticipated that this code will be added later, and a high level driver routine
+named gmi-exam-all-tests will be written that automatically invokes both the
+builder and the launcher scripts for execution as batch background jobs.
+
+Both the builder and launcher scripts use 2 simple inputs, the "gmiroot",
+and the name of an input file that defines the chemistry types to be used.
+The current default is to read a "gmi-exam" file found in:  Test-plans/chemtypes
+
+Scripts and their results are "gradually built and stored" as the code drills
+down into more specific directories to run each test.  This provides an audit
+trail that will make it easier for a programmer to examine if a catastrophic
+failure should occur.
+
+Ultimately, if all goes well, the lowest level directories will contain scripts
+and output files that scientists will easily recognize as the types of batch job
+scripts and data files that they are accustomed to using when running GMI code.
+
+
+For example, you see this "flow" for gmi-exam-launcher in the above diagram:
+----------------------------------------------------------------------------
++-gmi-exam-launcher gmiroot chemfile  (runs chem. types requested by "chemfile")
+  |
+  +-Test-jobs/chemfile-script-time  >>  Test-jobs/chemfile-result-time
+  | |
+  | +-gmi-exam-driver gmiroot chemtype time (prepares code for a given chemtype)
+  |   |
+  |   +-zdriver-script-time  >>  zdriver-result-time
+  |     |
+  |     +-gmi-exam-runner gmiroot chemtype testname time (used for unique tests)
+
+You will only run one call to gmi-exam-launcher,
+but it will automatically spin-off commands to run code such as this flow:
+
+cd  /scr/$USER/GMIexam
+./gmi-exam-launcher   /scr/$USER/GMIexam  chemtypes
+
+cd  /scr/$USER/GMIexam/Test-jobs
+./chemtypes-script-20051118-062810  >>  ./chemtypes-result-20051118-062810 
+
+cd  /scr/$USER/GMIexam
+./gmi-exam-driver     /scr/$USER/GMIexam  aerosol  20051118-062810
+ 
+cd  /scr/$USER/GMIexam/Test-jobs/aerosol
+./zdriver-script-20051118-062810  >>  ./zdriver-result-20051118-062810 
+
+./gmi-exam-runner     /scr/$USER/GMIexam  aerosol  aero_dao   20051118-062810
+./gmi-exam-runner     /scr/$USER/GMIexam  aerosol  aero_giss  20051118-062810
+...etc...
+
+The code seen above is not exactly what will be run, but it simulates the
+essence of what is done (using condensed command lines to improve readability).
+
+This example shows a launch that was done at 06:28:10 on November 18, 2005,
+and thereby caused the launcher routine to create the timestamp 20051118-062810
+to use within filenames and as arguments to downstream routines to track the
+final results for this specific launch.
+
+A script is built within the Test-jobs directory, and that builds code in the
+Test-jobs/aerosol directory, and the gmi-exam-runner routine ultimately builds
+code in the directories named:
+
+Test-jobs/aerosol/aero_dao
+Test-jobs/aerosol/aero_giss
+etc.
+
+The full flow is not expanded here, but this should give you an idea of how the
+code works and the general meaning of the "shorthand notation" in the diagram.
+
+If running the default implementation upon the Compaq system for which these
+test programs were originally designed, the launcher routine will also log the
+results of comparisons of the ASCII output results with the expected results,
+and starts up a background job that will monitor the ultimate success or failure
+of the entire run of all test cases.  That job will then send an email message
+to inform the user of the results, and the need to verify the code's conclusion.
+
+________________________________________________________________________________
+
+This ends the "gmi-exam" README.flow documentation first written on 11/27/2005
+________________________________________________________________________________

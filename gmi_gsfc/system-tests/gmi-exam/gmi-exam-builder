@@ -1,0 +1,138 @@
+#!/usr/bin/perl -w
+#_______________________________________________________________________________
+#
+#  gmi-exam-builder :  Pre-release prototype code.  Invocation Example(s):
+#
+#  ./gmi-exam-builder   /scr/$USER/GMIexam  chemtypes
+#  ./gmi-exam-builder  /home/$USER/GMIexam  chemtypes
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+use strict;
+#->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+my ($chemlist, $chemtype, $dl, $en, $examhome, $gmiroot);
+my ($infile, $m, $nr, $r, $rc, $runthis, $zresult, $zscript);
+my (@chem, @nolines, @rows, @zmoment);
+
+$dl = '=' x 70;    # Divider line of 70 equal sign characters.
+#_______________________________________________________________________________
+#
+#  Begin basic checks and preparations related to I/O arguments, files, etc.
+#_______________________________________________________________________________
+#
+if ( @ARGV ne 2 )
+{  print "\n\nERROR.  This program uses 2 inputs.  Please read its comments.\n";
+   print "Execution Halted.\n";
+   exit 1;
+}
+($gmiroot, $chemlist) = @ARGV;
+
+$examhome = "$gmiroot/system-tests/gmi-exam";
+#_______________________________________________________________________________
+$runthis = 'date +%Y%m%d-%H%M%S';
+chomp ( @zmoment = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  print "\nERROR.  Use of the date command failed with return code = $rc\n";
+   print "Execution Halted.\n";
+   exit 2;
+}
+$infile  = "$examhome/Test-plans/$chemlist";
+$zresult = "$examhome/Builds/$chemlist-result-$zmoment[0]";
+$zscript = "$examhome/Builds/$chemlist-script-$zmoment[0]";
+#_______________________________________________________________________________
+#
+unless ( open ( CHEMTYPES, "$infile" ) )
+{  print "\nERROR!  Input File: $infile\nencountered OPEN Error: $!\n";
+   print "Execution Halted.\n";
+   exit 3;
+}
+unless ( open ( ZR, "> $zresult" ) )
+{  print "\nERROR!  Could not write to $zresult\n";
+   print "due to OPEN Error: $!\n\nExecution Halted.\n";
+   exit 4;
+}
+unless ( open ( ZS, "> $zscript" ) )
+{  print "\nERROR!  Could not write to $zscript\n";
+   print "due to OPEN Error: $!\n\nExecution Halted.\n";
+   exit 5;
+}
+chomp ( @rows = <CHEMTYPES> );
+close         (  CHEMTYPES  );
+$nr=0;
+for $r (@rows)  {  if ( $r !~ /^#/ )  { $chem[$nr] = $r;  $nr++; }  }
+unless ($nr)
+{  print "\nERROR!  Input File: $infile\nDID NOT contain any line(s) ";
+   print "defining the chemistry type(s).\n\nExecution Halted.\n";
+   exit 6;
+}
+@rows = ();
+$m = "The gmi-exam-builder program will now begin building a script named:\n"
+   . "$dl\n$zscript\n\n"
+   . "which should build the GMI executable(s) requested by the input file:\n"
+   . "$dl\n$infile\n\n"
+   . "and the stdout + stderr results of these builds will be stored in:\n"
+   . "$dl\n$zresult\n\n";
+print    "$m";
+print ZR "$m";
+
+$m = "#!/bin/csh\n"
+   . "setenv GMIROOT '$gmiroot'\n"
+   . "source $examhome/gmi-exam-setenv\n\n";
+print ZS "$m";
+
+$en = 0;
+for $chemtype ( @chem )
+{  $en++;
+   $m = "setenv CHEMCASE '$chemtype'\n"
+      . 'cd $GEMHOME'                                                . "\n"
+      . "mkmf\n"
+      . "make\n"
+      . 'set  gmi_exam_status = $status'                             . "\n"
+      . 'if ($gmi_exam_status) then'                                 . "\n"
+      . "   echo '$dl'\n"
+      . "   echo 'The make build FAILED for CHEMCASE = $chemtype'\n"
+      . '   echo "The make Exit Status = $gmi_exam_status"'          . "\n"
+      . "exit $en\n"
+      . "endif\n"
+      . "mv  bin/gem  bin/gem-$chemtype\n";
+   print ZS "$m";
+   $en++;
+   $m = "make clean\n"
+      . 'set  gmi_exam_status = $status'                             . "\n"
+      . 'if ($gmi_exam_status) then'                                 . "\n"
+      . "   echo '$dl'\n"
+      . "   echo 'The make clean FAILED for CHEMCASE = $chemtype'\n"
+      . '   echo "The make Exit Status = $gmi_exam_status"'          . "\n"
+      . "exit $en\n"
+      . "endif\n\n";
+   print ZS "$m";
+}
+print ZS "exit 0\n";
+close(ZS);
+$runthis = "chmod 750 $zscript";  # Set Group readable/executable bits.
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  $m = "\nERROR.  Could not chmod the make script!\nReturn code = $rc\n"
+      . "\nHalting Execution.  Please Investigate this problem!!!\n";
+   print    "$m";
+   print ZR "$m";
+   close(ZR);
+   exit 7;
+}
+close(ZR);
+$runthis = "$zscript >> $zresult 2>&1";
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  print "\nERROR.  The make script failed!\nReturn code = $rc\n";
+   print "\nHalting Execution.  Please Investigate this problem!!!\n";
+   exit 8; 
+}
+exit 0;

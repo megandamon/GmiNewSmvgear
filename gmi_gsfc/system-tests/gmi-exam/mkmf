@@ -1,0 +1,28 @@
+#!/bin/sh
+#_______________________________________________________________________________
+#
+#  NOTE:  This is a Pre-release prototype module used by the "gmi-exam" modules.
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+#  mkmf   : Simple script used to build a Makefile for the GMI "gem" code.
+#_______________________________________________________________________________
+#
+if   [ ! "$GEMHOME" ]; then
+   echo " "
+   echo "ERROR!  You forgot to define the environment variable:  GEMHOME"
+   echo " "
+elif [ ! -d "$GEMHOME" ]; then
+   echo " "
+   echo "ERROR!  This GEMHOME value does not point to a directory:"
+   echo "---------------------------------------------------------"
+   echo "$GEMHOME"
+else
+   cd       $GEMHOME
+   /bin/rm  Makefile  >/dev/null 2>&1
+   make  -f  $GEMHOME/include/Makefile.init  Makefile
+fi

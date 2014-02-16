@@ -1,0 +1,33 @@
+#!/bin/csh -x
+
+#######################################################################
+#                 Batch Parameters for Compaq (Halem)
+#######################################################################
+
+#BSUB -W 00:10
+#BSUB -q gmao_hi
+#BSUB -n 8
+#BSUB -o std.out%J
+#BSUB -e std.err%J
+#BSUB -J FVAdvStandalone
+#BSUB -P g0621
+
+#######################################################################
+#                   Batch Parameters for Altix
+#######################################################################
+
+#PBS -l walltime=0:09:00
+#PBS -l ncpus=8
+#PBS -V
+#PBS -N fvadvsa
+#PBS -q debug
+#PBS -W group_list=g0620
+
+#######################################################################
+#                  System Environment Variables
+#######################################################################
+
+cd /home1/wsawyer/ESMA/tracer_advection/src/Application
+#prun -n 8 ../../OSF1/bin/FVAdvStandalone.x
+mpirun -np 8 ../../Linux/bin/FVAdvStandalone.x
+

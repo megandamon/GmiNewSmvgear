@@ -1,0 +1,349 @@
+%
+\chapter[Installation and Testing]{Installation and Testing}
+\label{chap:installation}
+%
+This chapter is written to help new users install and 
+test the GMI code. 
+We provide specific instructions on how to obtain the code, 
+to properly set environment variables, to select the model 
+configuration, to choose a particular platform, 
+to compile the code and to perform basic test runs. 
+The focus of these instruction is on the installation and execution of 
+the GMI code on {\tt discover} and {\tt explore}. 
+The same procedures can easily be applied to any platform.
+
+To get and install the GMI code, the following system software is needed:
+%
+\begin{itemize}
+\item CVS (see Chapter \ref{chap:cvs} for instruction)
+\item F90/95 (ideally {\em ifort} for intel)
+\item C (ideally {\em icc} for intel). Down the road, it will not be required.
+\item MPI 
+\item netCDF (version 3.4 or higher). The location of netCDF should be
+      provided in the files {\em Config/gem\_config.h} and {\em Config/compiler.mk}
+      before compiling the code (see Section \ref{sec:envi} for details).
+\item ESMF (see {\tt http://www.esmf.ucar.edu}) 
+\item make and gmake
+\item makedepend (generally in /usr/bin/X11)
+\item perl
+\item a debugger (if possible)
+\end{itemize}
+
+
+%
+%\section{Installation and Testing}
+During this process of installing and testing the code, it is 
+assumed that {\em Cshell} is the default shell employed by the user.
+In fact, the GMI environment variables required for these procedures are
+set up using {\em Cshell}.
+
+\section{Getting the Code}
+%
+To obtain the GMI code,
+%
+\begin{itemize}
+\item Select the directory where you want to install the GMI model, 
+      say {\em MYGMI/}
+\item Get the latest version of the model from the cvs repository at 
+      {\em sourcemotel} by typing the command lines:
+\end{itemize}
+%
+\begin{verbatim}
+        %setenv CVS_RSH ssh
+        %cvs -d usrid@sourcemotel.gsfc.nasa.gov:/cvsroot/gmi co -P gmi_gsfc
+\end{verbatim}
+%
+Here {\em usrid} is your login name on {\tt sourcemotel}.
+You will be asked to provide your password on {\tt sourcemotel}. 
+The directory {\em gmi\_gsfc/}, which is the main GMI directory,
+is then created.
+%
+\section{Model Files and Directory Structure}
+%
+\noindent
+Move into {\em gmi\_gsfc/}, the top directory of the GMI code:
+%
+\begin{verbatim}
+        %cd gmi_gsfc
+        %ls
+\end{verbatim}
+%
+You will find (in {\em gmi\_gsfc/}) the files and directories:
+%
+\begin{verbatim}
+    Applications/     Config/        README.first       Shared/       login.gmi
+    CVS/              Documents/     README.install     cshrc.gmi
+    Components/       Makefile       README.notice      gem/
+\end{verbatim}
+%
+%The top directory of the GMI code is {\em gmi\_gsfc/} which contains
+%sub-directories presented in Chapter \ref{chap:structure}.
+
+%
+\section{Setting Environment Variables} \label{sec:envi}
+%
+In the directory {\em gmi\_gsfc/}, read all the README files by 
+starting with {\em README.first} 
+file that guides a new user to take the required steps for 
+installing and running the GMI code. 
+The top portions of the files {\em cshrc.gmi} and {\em login.gmi}
+(also located in {\em Shared/GmiScripts/})
+include instructions for setting up the environment variables
+which are discussed in this section.
+\newline
+\newline
+%
+Edit the file {\em cshrc.gmi} 
+\begin{itemize}
+\item Select the chemistry mechanism you want to consider by setting
+      the variable {\em CHEMCASE}. Currently six mechanisms are
+      available: {\em troposphere}, {\em aerosol}, {\em micro\_aerosol},
+      {\em gocart\_aerosol}, {\em stratosphere}, and
+      {\em strat\_trop} (for the combined stratosphere/troposphere or combo mechanism).
+      If you want to use the {\em troposphere}  mechanism for instance, uncomment
+      the corresponding line to have
+\begin{verbatim}
+        setenv CHEMCASE trop
+\end{verbatim}
+%
+\item For the platform you want the GMI model to run on,
+      update the variables {\em GMIHOME} (location of the main 
+      model directory) and {\em GMI\_DATA} (directory where the input 
+      data to test the installation are located - not really necessary):
+%
+\begin{verbatim}
+        setenv GEMHOME   ~/MYGMI/gmi_gsfc
+        setenv GMI_DATA  ~/MYGMI/gmi_gsfc
+\end{verbatim}
+\end{itemize}
+%
+%
+Copy the files {\em cshrc.gmi} and {\em login.gmi}  from this directory to your home 
+directory
+%
+\begin{verbatim}
+        %cp cshrc.gmi ~/.cshrc.gmi
+        %cp login.gmi ~/.login.gmi
+\end{verbatim}
+%
+Go to the directory {\em Config/} and edit the file {\em gem\_sys\_options.h}. 
+Modify the line
+%
+\begin{verbatim}
+        #define ARCH_OPTION  ARCH_XXXX
+\end{verbatim}
+%
+to select the architecture on which you want to run the code.
+For instance, {\em XXXX} is {\em INTEL} for {\tt discover} or {\tt explore}. 
+In this case, you also need to set
+%
+\begin{verbatim}
+        #define HOST_MACH  YYYYY
+\end{verbatim}
+%
+where {\em YYYYY} is either {\em DISCOVER} or {\em PALM} (for {\em explore}).
+\newline
+In addition, set the variable {\em MSG\_OPTION} to determine if you want a
+single processor version of the code
+%
+\begin{verbatim}
+        #define MSG_OPTION    MSG_NONE
+\end{verbatim}
+%
+or a multiple processor version (using MPI) of the code
+%
+\begin{verbatim}
+        #define MSG_OPTION    MSG_MPI
+\end{verbatim}
+
+You may also choose to edit the file {\em gem\_options.h} to select 
+debugging, optimization, or profiling options. 
+Provide the paths to MPI and netCDF include 
+files and libraries in the files {\em gem\_config.h} and {\em libraries.mk}.  
+Some compilation options may have to be changed in the files
+{\em gem\_config.h} and {\em compiler.mk}.
+%
+Go to your home directory and edit the file {\em .cshrc}
+%
+\begin{verbatim}
+        %cd ~/
+        %vi .cshrc
+\end{verbatim}
+%
+Include the lines
+%
+\begin{verbatim}
+        setenv CVS_RSH ssh
+        setenv ARCHITECTURE  ARCH_XXXX
+        if (-e ~/.cshrc.gmi) then
+           source ~/.cshrc.gmi
+        endif
+\end{verbatim}
+%
+You must also edit the {\em .login} file and add the lines
+%
+\begin{verbatim}
+        if (-e ~/.login.gmi) then
+            source ~/.login.gmi
+        endif
+\end{verbatim}
+%
+Update the changes made in the files {\em .cshrc} and {\em .login} by typing:
+%
+\begin{verbatim}
+        %source .cshrc
+        %source .login
+\end{verbatim}
+%
+
+The setting of the environment variables ended with the previous two commands.
+The setting automatically creates aliases that allow the user to easily access
+the code directories and to execute scripts (see Chapter \ref{chap:script}).
+For instance, by typing:
+%
+\begin{itemize}
+\item {\tt cd gmi} or {\tt cd \$GMIHOME}, you will get to the code main directory.
+\item {\tt cd phot}, you will move to the directory containing the Photolysis
+      component package ({\em gmi\_gsfc/Components/GmiChemistry/photolysis/}).
+\item {\tt cd emiss}, you will move to the directory containing the Emission
+      component package ({\em gmi\_gsfc/Components/GmiEmission/}).
+\item {\tt seabf my\_words}, you will search through all the GMI ".F90" files
+      for the string {\em my\_words}.
+\end{itemize}
+%
+%
+\section{Code Compilation and Basic Test Run} \label{sec:compilation}
+%
+Go back to the working directory {\em MYGMI/gmi\_gsfc/}:
+%
+\begin{verbatim}
+        %cd gmi
+\end{verbatim}
+%
+\subsection{Compiling the model}
+%
+
+To compile the code, use the commands:
+%
+\begin{verbatim}
+        %gmake all
+\end{verbatim}
+%
+The {\em gmake} command compiles and links the code.
+".f90", ".o", ".mod" and ".a" files are created and the executable named 
+{\em gmi.x} is placed in the directory {\em Applications/GmiBin/}.
+
+\subsection{Testing the Executable}
+
+\noindent
+To test the executable, we will use a sample resource file that comes with
+the code.
+For each platform, we show examples of job script files 
+(named {\em gmitest.job}) to test the executable.
+On {\tt explore} and {\tt discover} you need to have your
+sponsor code account (type the command {\tt getsponsor} to obtain it).
+
+It is assumed that the user wants to test the model from the directory
+{\em /explore/nobackup/usrid} on {\tt explore} and
+{\em /discover/nobackup/usrid} on {\tt discover}.
+
+\begin{verbatim}
+  runGmi_ExploreTest
+        #PBS -S /bin/csh
+        #PBS -N gmiCombo
+        ##     -N sets job's name
+        #PBS -l ncpus=64
+        #PBS -l walltime=00:35:00
+        #PBS -A a930b
+        ##      -A sets the sponsor code account
+        #PBS -V
+        #PBS -e gmiCombo.err
+        #PBS -o gmiCombo.out
+        #
+        setenv workDir /explore/nobackup/usrid
+        setenv CHEMCASE strat_trop
+        setenv GmiBinDir ~/MYGMI/gmi_gsfc/Applications/GmiBin
+
+        cd $workDir
+        #
+        mpirun -np 64 $GmiBinDir/gmi.x
+\end{verbatim}
+
+\begin{verbatim}
+  runGmi_DiscoverTest
+        #PBS -S /bin/csh
+        #PBS -N gmiCombo
+        ###    -N sets job's name
+        #PBS -l select=16:ncpus=4
+        ###     choose 16 nodes and 4 processors per node
+        #PBS -l walltime=00:35:00
+        #PBS -W a930b
+        ###     -W sets the sponsor code account
+        #PBS -V
+        #PBS -e gmiCombo.err
+        #PBS -o gmiCombo.out
+        #
+        setenv workDir /discover/nobackup/usrid
+        setenv CHEMCASE strat_trop
+        setenv GmiBinDir ~/MYGMI/gmi_gsfc/Applications/GmiBin
+
+        cd $workDir
+        #
+        limit stacksize unlimited
+        mpirun -np 64 $GmiBinDir/gmi.x
+\end{verbatim}
+
+\begin{remark}
+Replace a930b in the above script files with your sponsor code account.
+Here {\em usrid} is the user's login name.
+\end{remark}
+
+To submit the job script, do the following
+%
+\begin{verbatim}
+  On explore and discover
+      %qsub runGmi_ExploreTest
+      %qsub runGmi_DiscoverTest
+\end{verbatim}
+%
+%
+%\begin{verbatim}
+%diff dao2rn_dao46_06.asc \
+%     $GEMHOME/actm/gmimod/Other/test/par/outfiles/dao2rn_dao46_06.asc
+%\end{verbatim}
+%%
+%The matching results ensure the installation and compilation of GMI 
+%model is complete.
+%
+%\begin{remark}
+%Due to the changes made within the code, it may turn out that the 
+%verification process fails at the end of the run. 
+%That does not mean the installation of the code was unsuccessful. 
+%A failure may be due to the fact that the latest version of the code 
+%contains several updates (as a result of the bugs that were found). 
+%The comparison is done between the output from the new code and the 
+%output of the original one (containing bugs).
+%\end{remark}
+
+\section{Summary of the Necessary Steps}
+%
+In this section, we summarize the steps needed to obtain, install,
+and run the GMI code on any platform.
+%
+\begin{enumerate}
+\item Obtain the code ({\em gmi\_gsfc} release) from the cvs repository.
+\item Move to the GMI working directory ({\em gmi\_gsfc/}).
+\item Edit the file {\em cshrc.gmi} to update the variables 
+      {\tt GMIHOME}, {\tt GMI\_DATA} (not necessary) and {\tt CHEMCASE}.
+\item Copy the files {\em cshrc.gmi} and {\em login.gmi} to {\em .cshrc.gmi} and 
+      {\em .login.gmi} in your home directory.
+\item Go to the directory {\em Config/} to edit the files
+      {\em gem\_sys\_options.h}, {\em gem\_config.h}, {\em compiler.mk}, and
+      {\em libraries.mk} to select the
+      architecture and to update the compilation options and paths.
+\item Go to your home directory to edit and source the files
+      {\em .cshrc} and {\em .login}.
+\item Type {\tt cd gmi} and compile the code by typing
+      {\tt gmake all}.
+\item Write a job script file and submit the job to run the executable.
+\end{enumerate}

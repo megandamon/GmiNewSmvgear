@@ -1,0 +1,96 @@
+#_______________________________________________________________________________
+#
+#  NOTE:  This is a Pre-release prototype module used by the "gmi-exam" modules.
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+#  gmi-exam-setenv : Used to prepare a user's C Shell environment for building
+#                    executables for the Global Modeling Initiative (GMI) code.
+#_______________________________________________________________________________
+#
+#  Usage:            This is a sourceable file that was designed to reduce the
+#                    dependencies upon modifications users were formerly told to
+#                    make to their C shell .cshrc and .login user startup files.
+#
+#                    The original GMI code made a large number of changes to the
+#                    user's environment, including many changes to the "cdpath",
+#                    as seen below, and the introduction of numerous aliases.
+#
+#                    This code is designed to provide users with a way of
+#                    controlling when such changes are invoked, and represents
+#                    a much more abbreviated version of the changes formerly
+#                    invoked via files named .cshrc.ggmi and .login.ggmi.
+#
+#                    To use this code, create a directory that will hold the
+#                    GMI directory named "gem" and a few other directories,
+#                    and set the environment variable GMIROOT to the location
+#                    of the upper level directory holding "gem".
+#
+#                    Next, run:  source  gmi-exam-setenv
+#
+#                    Upon completion, you then only need to define the type of
+#                    chemistry to use for your executable by setting CHEMCASE,
+#                    and proceed to run the make commands needed to build it.
+#_______________________________________________________________________________
+#
+#  Related Code:     This product may be used interactively, or even sourced
+#                    from your C shell startups (if you wish), but it was mainly
+#                    designed to be called one time during the execution of a
+#                    chain of scripts in the the suite of "gmi-exam" software.
+#
+#                    Related modules include:
+#
+#  gmi-exam-cvs-co   -  Used to check out GMI modules from CVS into $GMIROOT.
+#
+#  gmi-exam-builder  -  Driver script used to build one or more executables.
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#_______________________________________________________________________________
+#
+#  Modification History:
+#
+#  11/27/2005  WHH  Original
+#_______________________________________________________________________________
+#
+setenv ARCHITECTURE ARCH_COMPAQ
+setenv HOSTMACH     halem_machine
+setenv EXAMHOME     "$GMIROOT/system-tests/gmi-exam"
+setenv GEMHOME      "$GMIROOT/gem"
+alias  mkmf         "$EXAMHOME/mkmf"
+#-------------------------------------------------------------------------------
+#  Make cdpath changes limited to those currently needed by the Makefile.
+#-------------------------------------------------------------------------------
+if ($?cdpath) then
+   set cdpath = ($cdpath $GEMHOME/actm/gmimod \
+                         $GEMHOME/actm/gmimod/Other \
+                         $GEMHOME/actm/gmimod/advec \
+                         $GEMHOME/actm/gmimod/chem \
+                         $GEMHOME/actm/gmimod/depos \
+                         $GEMHOME/actm/gmimod/emiss \
+                         $GEMHOME/actm/gmimod/phot \
+                         $GEMHOME/actm/gmimod/trans \
+                         $GEMHOME \
+                         $GEMHOME/esm \
+                         $GEMHOME/esm_tools)
+else
+   set cdpath =         ($GEMHOME/actm/gmimod \
+                         $GEMHOME/actm/gmimod/Other \
+                         $GEMHOME/actm/gmimod/advec \
+                         $GEMHOME/actm/gmimod/chem \
+                         $GEMHOME/actm/gmimod/depos \
+                         $GEMHOME/actm/gmimod/emiss \
+                         $GEMHOME/actm/gmimod/phot \
+                         $GEMHOME/actm/gmimod/trans \
+                         $GEMHOME \
+                         $GEMHOME/esm \
+                         $GEMHOME/esm_tools)
+endif
+#--------------------------------------------------------------------------
+#  Use this as a precaution, since we do not yet know if this is essential:
+#--------------------------------------------------------------------------
+set path = ($path /usr/bin/X11)

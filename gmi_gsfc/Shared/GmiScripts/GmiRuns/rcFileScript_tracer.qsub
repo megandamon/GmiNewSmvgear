@@ -1,0 +1,341 @@
+#PBS -S /bin/csh
+#PBS -N TracerCO
+#PBS -l select=4:ncpus=4:proc=wood:scali=True
+#PBS -l walltime=00:25:00
+#PBS -W group_list=a930b
+#PBS -j eo
+#PBS -V
+
+#######################################################################
+#                  System Environment Variables
+#######################################################################
+
+umask 022
+
+setenv MPI_USE_XPMEM
+setenv MPI_BUFFER_MAX 2000
+setenv MPI_TYPE_MAX   655360
+setenv MPI_MSGS_MAX   10485760
+
+setenv MPI_GROUP_MAX 128
+setenv RUN_CMD "time mpirun -inherit_limits -np"
+
+module purge
+module load comp/intel-9.1.042
+module load mpi/scali-5
+
+#######################################################################
+#                        Set Experiment Directories
+#######################################################################
+#
+# Modify the following directories to specify source and run locations
+
+setenv gmiBIN /home/kouatch/GmiCodes/ESMFcode/gmi_gsfc/Applications/GmiBin
+setenv runDIR /discover/nobackup/kouatch/GMI/Tracers
+
+mkdir -p $runDIR
+cd $runDIR
+
+# The application executable
+
+setenv APP_EXE gmi.x
+
+# Chemical mechanism
+
+setenv CHEMCASE aerosol
+
+#######################################################################
+#                       Set Model Run Parameters
+#######################################################################
+
+# Problem name
+
+set gmiProblemName = TracerCO
+
+# Processor decomposition along longitude and latitude
+
+set numLonProcs  = 5
+set numLatProcs  = 3
+
+# Global domain grid
+
+set firstGlobLon  = 1
+set lastGlobLon   = 144
+set firstGlobLatU = 1
+set firstGlobLatV = 1
+set lastGlobLat   = 91
+set firstGlobAlt  = 1
+set lastGlobAlt   = 42
+set gmi_nborder   = 4
+set numSpecies    = 1
+
+# Begin and end time
+
+set BEG_YY = 2004
+set BEG_MM = 1
+set BEG_DD = 15
+set BEG_H  = 0
+set BEG_M  = 0
+set BEG_S  = 0
+
+set END_YY = 2004
+set END_MM = 1
+set END_DD = 16
+set END_H  = 0
+set END_M  = 0
+set END_S  = 0
+
+# Model time step
+
+set DT = 1800.0
+set tdt = 1800.0d0
+
+# Leap year calender flag
+
+set leapYearFlag = 0
+
+set do_ftiming = T
+
+set splitPEs = 2
+
+set TEST = 1
+
+@ IM = 1 + $lastGlobLon - $firstGlobLon
+@ JM = 1 + $lastGlobLat - $firstGlobLatU
+@ LM = 1 + $lastGlobAlt - $firstGlobAlt
+
+@ begGmiTime = $BEG_H  * 10000 + $BEG_M  * 100 + $BEG_S
+@ begGmiDate = $BEG_YY * 10000 + $BEG_MM * 100 + $BEG_DD
+
+@ endGmiTime = $END_H  * 10000 + $END_M  * 100 + $END_S
+@ endGmiDate = $END_YY * 10000 + $END_MM * 100 + $END_DD
+
+@ numWorkerProcs  = $numLonProcs * $numLatProcs
+
+/bin/rm -f $gmiProblemName*
+
+
+#######################################################################
+#                     Create GMI Resource File
+#######################################################################
+
+set      FILE = gmiResourceFile.rc
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+
+ROOT_RC_FILE: FVadvcore_GridComp.rc
+splitPEs: $splitPEs
+
+        #########################
+        # Global Domain variables
+        #########################
+
+NX: $numLonProcs  
+NY: $numLatProcs
+IM: $IM
+JM: $JM
+LM: $LM
+
+gmi_nborder: $gmi_nborder
+numSpecies: $numSpecies
+
+        ##################
+        # Timing variables
+        ##################
+
+BEG_YY: $BEG_YY
+BEG_MM: $BEG_MM
+BEG_DD: $BEG_DD
+BEG_H:  $BEG_H
+BEG_M:  $BEG_M
+BEG_S:  $BEG_S
+
+END_YY: $END_YY
+END_MM: $END_MM
+END_DD: $END_DD
+END_H:  $END_H
+END_M:  $END_M
+END_S:  $END_S
+
+RUN_DT: $DT
+
+leapYearFlag: $leapYearFlag
+
+        #############################
+        # metFields related variables
+        #############################
+
+met_opt: 3
+met_grid_type: A
+do_timinterp_met: F
+met_infile_num: 1
+mrnum_in: 1
+met_filnam_list: metList2004.list
+do_read_met_list: T
+do_cycle_met: T
+gwet_opt: 1
+mdt: 10800.0d0 
+
+        #########################################
+        # Species Concentration related variables
+        #########################################
+
+const_opt: 1
+const_init_val::
+1.0d-30
+::
+
+        #############################
+        # Tracer related variables
+        #############################
+
+tracer_opt: 1
+efol_time: 60.0d0
+
+        ###############################
+        # Diagnostics related variables
+        ###############################
+
+problem_name: $gmiProblemName
+do_ftiming: $do_ftiming
+pr_diag: F
+
+pr_ascii: T
+pr_ascii1: T
+pr_ascii2: F
+pr_ascii3: T
+pr_ascii4: T
+pr_ascii5: T
+pr_netcdf: T
+pr_const: T
+pr_psf: T
+pr_kel: T
+pr_mass: T
+pr_dry_depos: F
+pr_wet_depos: F
+pr_surf_emiss: F
+do_mean: T
+pr_flux: F
+pr_tend: F
+pr_nc_period_days: -1.0d0
+
+        #############################
+        # Restart related variables
+        #############################
+
+pr_restart: T
+pr_rst_period_days: -1.0d0
+
+        #############################
+        # Advection related variables
+        #############################
+
+advec_opt: 1
+press_fix_opt: 2
+advec_flag_default: 1
+do_var_adv_tstp: T
+do_grav_set: T
+
+        #############################
+        # Diffusion related variables
+        #############################
+
+diffu_opt: 1
+vert_diffu_coef: 1.0d0
+
+        ##############################
+        # Convection related variables
+        ##############################
+
+convec_opt: 3
+
+        ##############################
+        # Deposition related variables
+        ##############################
+
+do_drydep: F
+do_wetdep: F
+
+        ##############################
+        # Emission related variables
+        ##############################
+
+emiss_opt: 1
+emiss_in_opt: 2
+emiss_timpyr: 12
+emiss_var_name: emiss
+emiss_infile_name: /discover/nobackup/kouatch/GMI/Tracers/emiss_TP1_GMI.nc
+emissionSpeciesNames::
+CO
+xxx
+xxx
+xxx
+xxx
+xxx
+xxx
+::
+
+        ##############################
+        # Lightning related variables
+        ##############################
+
+lightning_opt:0
+
+        ##############################
+        # Chemistry related variables
+        ##############################
+
+chem_opt: 0
+const_labels:: 
+co
+::
+
+mw::
+28.0d0
+::
+
+        ##############################
+        # Photolysis related variables
+        ##############################
+
+phot_opt: 0
+
+
+_EOF_
+
+
+#######################################################################
+#          Advection core Configuration File must include timestep
+#######################################################################
+
+set      FILE = FVadvcore_GridComp.rc
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+
+RUN_DT: $DT
+TEST:   $TEST
+_EOF_
+
+#######################################################################
+#         History Configuration File
+#######################################################################
+
+set      FILE = HISTORY.rc
+/bin/rm $FILE
+cat << _EOF_ > $FILE
+EXPID:  FVadvection_example
+EXPDSC: FVadvection_(ESMF07_EXAMPLE)_5x4_Deg
+
+COLLECTIONS:
+      ::
+_EOF_
+
+#######################################################################
+#                          Run the Model
+#######################################################################
+
+limit stacksize unlimited
+$RUN_CMD  $numWorkerProcs $gmiBIN/$APP_EXE -d $gmiProblemName.in
+
+exit
+

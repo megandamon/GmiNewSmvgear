@@ -1,0 +1,34 @@
+________________________________________________________________________________
+
+This "system-tests" directory was created to hold software products that are
+being developed to run tests on the Global Modeling Initiative (GMI) software.
+
+The initial plan for such products was to create an automated application that
+could build one or more GMI executables, run them using standardized test cases,
+compare the output files against the pre-validated results expected for each
+test case, and fully automate all these actions to the maximum extent possible.
+
+Ideally, we would like to develop tools of this nature that can be launched on
+as many different system architectures as are supported by the GMI project.
+
+Hence, the name "system-tests" implies that this development area contains
+software for testing GMI functionalities for multiple types of systems.
+
+Directories found directly below the "system-tests" level will be used to
+hold each unique type of testing tool being developed for the GMI project.
+
+The first tool that motivated the creation of this directory was a prototype
+pre-release of a series of programs known as the "gmi-exam" suite of automated
+software, which is used to examine the validity of upgrades to the GMI software.
+
+As of 12/01/2005, the "gmi-exam" software (although still under testing and
+development) was able to use the NCCS Compaq system named Halem to automatically
+check out the GMI code, build it, execute it, test its results, and deliver an
+email summary of the test cases' success/failure results to the user.
+
+This software was developed by the Advanced Software Technology Group of the
+Software Integration and Visualization Office (ASTG/SIVO), NASA GSFC Code 610.3,
+and is contained in the directory named "gmi-exam".
+
+For further details, please refer to the README files in that sudirectory.
+________________________________________________________________________________

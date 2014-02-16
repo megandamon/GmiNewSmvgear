@@ -1,0 +1,399 @@
+\chapter[Important Features]{Important Features} \label{chap:features}
+
+\section{From Species Indices to Species Names}
+%
+In older versions of the code,
+setting resource file variables using species indices was not a simple task.
+When moving from one experiment to another, users were be interested in
+a given set of species but had to reset resource file variables matching
+species with their indices.
+In fact, their main concern was to know if a given species is part of
+a chemical mechanism, but not its index.
+Mistakes were unintentionally introduced, leading to a waste of time and
+computing resources.
+To alleviate these problems, we now use species labels instead
+of indices in the resource file.
+
+We wrote a Fortran module ({\em GmiSpeciesRegistry\_mod}
+containing the function {\tt getSpeciesIndex}) providing the species index given
+its name.
+The function {\tt getSpeciesIndex} only takes a species name as its argument
+and does not depend on any chemical mechanism or any particular experiment.
+Two variables have to be passed to the module (will do internal initialization)
+for the function to work properly:
+%
+\begin{itemize}
+\item {\em num\_species}: total number of species used in the experiment
+\item {\em const\_labels}: list of all species names used in the experiment.
+\end{itemize}
+%
+\begin{remark}
+The module gets its information at run time but not at compilation time.
+This allows us to take into account tracer runs without making any specific
+provision in the code.
+\end{remark}
+
+We substituted old namelist variables (using species indices) with
+new resource file ones. In the resource file, we only need to provide the list of
+species names we are interested in and the code will figure out
+(using {\tt getSpeciesIndex}) what indices they correspond to.
+
+In Table \ref{tab:nlNewVars}, we provide the list of the new resource file
+variables and the corresponding old ones.
+It is important to note that the old resource file variables remain part
+of the code (as regular variables) and  are still used for calculations.
+The newly created variables are only local variables utilized to
+set the ones they replace in the resource file.
+
+\begin{center}
+\begin{longtable}{|l|l|} \hline\hline
+{\bf Old Namelist variables} & {\bf New Resource File Variables} \\ \hline\hline
+\multicolumn{2}{|c|}{\bf SpeciesConcentration SECTION } \\ \hline\hline
+fixed\_const\_map(1:n)                      & fixedConcentrationSpeciesNames \\ \hline\hline
+\multicolumn{2}{|c|}{\bf Diagnostics SECTION } \\ \hline\hline
+pr\_const\_rec\_flag(1:n)                   & concentrationSpeciesNames   \\
+pr\_emiss\_rec\_flag(1:n)                   & surfEmissSpeciesNames       \\
+pr\_drydep\_rec\_flag(1:n)                  & dryDepSpeciesNames          \\
+pr\_wetdep\_rec\_flag(1:n)                  & wetDepSpeciesNames          \\
+pr\_tend\_rec\_flag(1:n)                    & tendSpeciesNames            \\
+flux\_species(1:n)                          & fluxSpeciesNames            \\
+ifreq$\#$\_species(1:n) ($\# = 1, 2, 3, 4$) & freq$\#$SpeciesNames        \\
+species\_overpass$\#$(1:n) ($\# = 1, 2$)    & overpass$\#$SpeciesNames    \\
+noon\_species(1:n)                          & noonSpeciesNames            \\
+local\_species(1:n)                         & localSpeciesNames           \\
+col\_diag\_species(1:n)                     & colDiagSpeciesNames        \\ \hline\hline
+\multicolumn{2}{|c|}{\bf Advection SECTION } \\ \hline\hline
+advec\_flag(1:n)                            & advectedSpeciesNames  \\ \hline\hline
+\multicolumn{2}{|c|}{\bf Emission SECTION } \\ \hline\hline
+emiss\_map(1:n)                             & emissionSpeciesNames  \\
+emiss\_map\_aero(1:n)                       & emissionAeroSpeciesNames  \\
+emiss\_map\_dust(1:n)                       & emissionDustSpeciesNames  \\ \hline\hline
+\multicolumn{2}{|c|}{\bf Chemistry SECTION } \\ \hline\hline
+forc\_bc\_map(1:n)                          & forcedBcSpeciesNames \\ \hline\hline
+\caption{New resource file variables (and corresponding old namelist ones) used to set species names 
+instead of species indices.}
+\label{tab:nlNewVars}
+\end{longtable}
+\end{center}
+
+We adopted the following principles for the new resource variables:
+\begin{enumerate}
+\item For a given variable, the number of species names entered is no longer necessary.
+\item Each variable is a table with one entry per line.
+\item In the previous version of the code, {\tt emiss\_map} was set in the
+      namelist file to determine the number of species in the emission input
+      file and to select the species to be read in from the file.
+      In the new setting, if a species is not read in, the name to be
+      included in {\tt emissionSpeciesNames} is xxx. The function will
+      return -1 for the species index.
+\item The order for entering the names is not important for diagnostics-related 
+      variables. However it is relevant for variables
+      ({\tt fixedConcentratinSpeciesNames, emission\-Species\-Names,
+      emissionDustSpeciesNames, emissionAeroSpeciesNames,
+      forced\-Bc\-Species\-Names}) used to read in files.
+\item Entering species names is not case sensitive. For example, the names
+     {\tt HNO3, hNO3, HnO3, HNo3, hnO3, hNo3, Hno3, hno3} correspond to the
+     same species. Users can select any of these names to refer to {\tt HNO3}.
+\item If a species names does not exist, the code will abort.
+\end{enumerate}
+
+\begin{remark}
+In previous versions of the GMI code, it was assumed that if a set of
+species is selected for constituent, wet deposition, dry deposition,
+and tendency output, the first species in the mechanism will be included by
+default. In this work, we did not make such an arrangement.
+Only the species provided by the user are considered for output.
+\end{remark}
+
+Here is an example of resource file setting for the AURA (combo, 124 species, no ship emission)
+ experiments:
+
+{\small
+\begin{verbatim}
+  dryDepSpeciesNames::
+  CH2O
+  H2O2
+  HNO3
+  MP
+  N2O5
+  NO2
+  O3
+  PAN
+  PMN
+  PPN
+  R4N2
+  ::
+
+  forcedBcSpeciesNames::
+  CFCl3
+  CF2Cl2
+  CFC113
+  CFC114
+  CFC115
+  CCl4
+  CH3CCl3
+  HCFC22
+  HCFC141b
+  HCFC142b
+  CF2ClBr
+  CF2Br2
+  CF3Br
+  H2402
+  CH3Br
+  CH3Cl
+  CH4
+  N2O
+  ::
+\end{verbatim}
+}
+
+%
+\section{Station Diagnostics}
+In previous versions of the code, when we wanted to do station diagnostics we
+needed to set in the namelist file three variables :
+%
+\begin{description}
+\item[col\_diag\_num:] total number of stations
+\item[col\_diag\_site:] complete list of stations
+\item[col\_diag\_lat\_lon:] locations (latitute/longitude) of stations.
+\end{description}
+%
+Users were required not only to count the number of stations (can be several hundreds)
+ but also to match the name of each station with its location.
+Removing/adding one station from the list involved the resetting of
+the above three variables with the possibility of mismatching.
+To facilitate the selection of stations, we :
+%
+\begin{itemize}
+\item Constructed a file containing a list of all the identified stations and their locations.
+      A resource file variable was created to point to the file. New stations can be added
+      to the file at any time. The order of writting station information is irrelevant.
+\item Added a new resource file variable (long string) to enter the list of selected stations.
+\item Made changes in the code to check if each selected station exists in the file and then extract
+      its location.
+\item Computed the number of selected stations at run time.
+\end{itemize}
+%
+We created two new resource file variables (see Table \ref{tab:nlColDiag}).
+%
+\begin{center}
+\begin{longtable}{|l|l|} \hline\hline
+{\bf Old Namelist variables} & {\bf New Resource File Variables} \\ \hline\hline
+\multicolumn{2}{|c|}{\bf Diagnostics SECTION } \\ \hline\hline
+col\_diag\_num            & N/A     \\
+col\_diag\_site()         & colDiagStationsNames \\
+col\_diag\_lat\_lon(2,n)  & N/A                  \\
+N/A                       & stationsInputFileName \\ \hline\hline
+\caption{New resource file variables for station diagnostics.}
+\label{tab:nlColDiag}
+\end{longtable}
+\end{center}
+%
+The piece of code used to carry out the above operations is:
+%
+\begin{verbatim}
+      ! Construct the list of station using the long string
+      call constructListNames(col_diag_site, colDiagStationsNames)
+
+      col_diag_num = Count (col_diag_site(:) /= '')
+
+      if (col_diag_num /= 0) then
+
+         do ic = 1, col_diag_num
+            ! For each station in the list, check if it exists in the file
+            ! and get its position (lat/lon)
+            call getStationPosition(col_diag_site(ic), &
+                                    col_diag_lat_lon(1,ic), &
+                                    col_diag_lat_lon(2,ic), &
+                                    stationsInputFileName)
+         end do
+          .
+          .
+          .
+      end if
+\end{verbatim}
+%
+We present below a sample resource file setting for {\tt colDiagStationsNames}
+and the first few lines of the file ({\tt colDiagStationList.asc})
+ containing station information.
+
+\begin{verbatim}
+ colDiagStationsNames::
+ SPO
+ MCM
+ HBA
+ FOR
+ NEU
+ SYO
+ PSA
+ MAR
+ MAQ
+ WAT
+ ASC
+ NAT
+ SEY
+ BRA
+ MAL
+ NAI
+ SNC
+ CHR
+ KCO
+ PAR
+ TVD
+::
+
+# --------------------------------------------------------------
+# Station name       Lat     Lon                 Description
+# --------------------------------------------------------------
+SPO                -89.98   335.20
+MCM                -77.83   166.60
+HBA                -75.56   333.50
+FOR                -71.00    12.00
+NEU                -71.00   352.00
+SYO                -69.00    39.58
+PSA                -64.92   296.00
+\end{verbatim}
+
+\begin{remark}
+While editing the file containing the station information, the following rules apply:
+\begin{enumerate}
+\item The first three lines of the file should start with the $\#$ character.
+\item Column 1 to Column 16 are for the station name.
+\item Column 17 to Column 25 are for the latitude of the station.
+\item Column 26 to Column 34 are for the longitude of the station.
+\item The remaining columns are reserved to describe stations and are not read in.
+\end{enumerate}
+\end{remark}
+
+\section{Frequency Diagnostics}
+With the Freq files, users can select the variables they desire
+to output at any frequency:
+\begin{enumerate}
+\item {\em const} (only for selected species; written out if {\em freq$\#$SpeciesNames} is set)
+\item {\em constSurface} (only for selected species; written out if {\em freq$\#$SpeciesNames} and {\em pr\_const\_surface\_freq$\#$} are set)
+\item {\em constColTrop} (only for selected species; written out if {\em freq$\#$SpeciesNames}  and {\em pr\_const\_column\_freq$\#$} are selected  only when using troposphere or combo mechanism)
+\item {\em constColCombo} (only for selected species; written out if {\em freq$\#$SpeciesNames}  and {\em pr\_const\_column\_freq$\#$} are selected only when using the combo mechanism)
+\item {\em kel}       (written out if {\em pr\_kel\_freq$\#$}=T)
+\item {\em psf}       (written out if {\em pr\_psf\_freq$\#$}=T)
+\item {\em metwater} (written out if {\em pr\_metwater\_freq$\#$}=T)
+\item {\em mass}       (written out if {\em pr\_mass\_freq$\#$}=T)
+\item {\em relHumidity}      (written out if {\em pr\_rel\_hum\_freq$\#$}=T)
+\item {\em overheadO3Column}   (written out if {\em pr\_overheadO3col\_freq$\#$}=T)
+\item {\em tropopausePressure} (written out if {\em pr\_tropopausePress\_freq$\#$}=T)
+\item {\em potentialVorticity} (written out if {\em pr\_potentialVorticity\_freq$\#$}=T)
+\end{enumerate}
+%
+Here  $\#$ is 1, 2, 3 or 4.
+
+There are other Freq related resource file variables that are of interest:
+%
+\begin{verbatim}
+        freq#_description: short description of the file
+        freq#_name       : name of the Freq file
+
+         pr_nc_freq#     : frequency for the outputs
+
+   Selected range of vertical levels
+        k1_freq#         : lowest  level to output
+        k2_freq#         : highest level to output
+
+   Selected horizontal domain for output
+        lonRange_freq#(1): west  longitude between 0 and 360
+        lonRange_freq#(2): east  longitude between 0 and 360
+        latRange_freq#(1): south latitude  between -90 and 90
+        latRange_freq#(2): north latitude  between -90 and 90
+\end{verbatim}
+
+
+\section{Overpass Diagnostics} \label{sec:noon_variable}
+Users  can select a range of time for which they wish to save out
+selected variables and to write them in the file, $<$problem\_name$>$.overpass$\#$.nc 
+(where $\#$ is 1, 2, 3 or 4).
+The variables are:
+\begin{enumerate}
+\item {\em const} (only for selected species; written out if {\em overpass$\#$SpeciesNames} is set)
+\item {\em kel}       (written out if {\em do\_mean}=T, and {\em pr\_kel\_overpass$\#$}=T)
+\item {\em psf}       (written out if {\em do\_mean}=T, and {\em pr\_psf\_overpass$\#$}=T)
+\item {\em metwater} (written out if {\em do\_mean}=T,  and {\em pr\_metwater\_overpass$\#$}=T)
+\item {\em qj}       (written out if {\em do\_mean}=T, and {\em pr\_qj\_overpass$\#$}=T)
+\item {\em qqj}      (written out if {\em do\_mean}=T, and {\em pr\_qqjk\_overpass$\#$}=T)
+\item {\em qqk}      (written out if {\em do\_mean}=T, and {\em pr\_qqjk\_overpass$\#$}=T)
+\end{enumerate}
+%
+Four new resource file variables were added
+\begin{description}
+\item[pr\_overpass$\#$]: if set to true, the overpass output file is produced. 
+      The file will still be created if any of the above conditions (resource file setting)
+      is satistfied.
+\item[begTime\_overpass$\#$]: begin time. 
+\item[endTime\_overpass$\#$]: end time.
+\item[pr\_overpass$\#$\_period\_days]: overpass variable output period.
+\end{description}
+%
+A sample resource file setting looks like (in the Diagnostics section):
+%
+\begin{verbatim}
+  do_mean: T
+  pr_overpass1: T
+  overpass1SpeciesNames::
+  CH2O
+  CO
+  NO
+  NO2
+  O3
+  OH
+  ::
+  begTime_overpass1: 7.0d0
+  begTime_overpass1: 16.0d0
+  pr_overpass1_period_days: -1.0d0
+\end{verbatim}
+
+In the above resource file setting, {\em pr\_overpass1} = T. 
+Therefore the file $<$problem\_name$>$.overpass1.nc will be created. 
+It will contain information (between 7am and 4pm) of the variables 
+{\em const\_overpass}, {\em kel\_overpass}, and {\em psf\_overpass} 
+(the resource file variables {\em pr\_const\_overpass1}, {\em pr\_kel\_overpass1}, 
+and {\em pr\_psf\_overpass1} will automatically be set to true). 
+One can obtain the mean values of the variables {\em metwater\_overpass}, 
+{\em qj\_overpass}, {\em qqj\_overpass} and {\em qqk\_overpass} by setting the resource file 
+variables {\em pr\_metwater\_overpass1}, {\em pr\_qj\_overpass1},
+{\em pr\_qqj\_overpass1}, and {\em pr\_qqk\_overpass1}, respectively, to true.
+It is important to note the following:
+%
+\begin{enumerate}
+\item We have assumed that {\em do\_mean}=T in order to be able to produce the 
+       overpass variables.
+\item If {\em pr\_overpass1} is not set at all in resource file, the code will
+      automatically set it to true if {\em overpass1SpeciesNames} has at least one species.
+\item If {\em pr\_overpass1} is set to false in the resource file, then
+       the file $<$problem\_name$>$.overpass1.nc will not be created at all,
+       regardless of the setting of the other variables.
+\end{enumerate}
+
+\section{Choice of Vertical Levels}
+All 3D variables are currently saved out on all vertical levels by default.
+However the user may only want to carry out post-processing
+analyses over a specific range of levels.
+At run time, the user can set the following resource file variables to select
+the range of vertical levels to output (this does not apply to the freq$\#$,
+overpass$\#$, and restart files):
+%
+\begin{description}
+\item[pr\_level\_all]: if set to T, all the vertical levels are
+   considered, otherwise a range (selected in the next two variables)
+   is used.
+\item[k1r\_gl]: First global altitude index for output.
+   Should be at least equal to {\tt k1\_gl}.
+\item[k2r\_gl]: Last global altitude index for output.
+   Should be at most equal to {\tt k2\_gl}.
+\end{description}
+%
+A sample resource file setting looks like (in the Control section):
+\begin{verbatim}
+   pr_level_all: F
+   k1r_gl: 3
+   k2r_gl: 20
+\end{verbatim}
+%
+When {\tt k1r\_gl} and {\tt k2r\_gl} are set, they apply to all the netCDF output
+files except the restart file.

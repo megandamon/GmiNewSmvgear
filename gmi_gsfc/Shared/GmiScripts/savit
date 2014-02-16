@@ -1,0 +1,103 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   savit
+#
+# DESCRIPTION
+#   This script creates a clean copy of a GMI code tree in a tmp
+#   directory, tars it up into a tarfile named gmiSav.tar, and puts this
+#   file in the directory where your gem directory resides.  The tmp
+#   files are then deleted. Be careful, as it will overwrite
+#   any pre-existing gmiSav.tar file that you might have.
+#
+#   ALSO NOTE THAT THIS SCRIPT DOES NOT STORE [.f] FILES.  THIS SHOULD BE
+#   WHAT IS DESIRED AS ALL gem/gmimod SOURCE FILES SHOULD BE NAMED
+#   [.F90|.c|.h].
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use English;
+use Env;
+use File::Find;
+
+
+my $host_machine = "$ENV{HOSTMACH}";
+my $gmi_dir      = "$ENV{GMIHOME}";
+my $tmp_dir;
+
+$tmp_dir = "/tmp/$USER.$PID";
+
+
+print "\nWorking...\n\n";
+
+mkdir ($tmp_dir, 0700);
+`/bin/cp -r $gmi_dir $tmp_dir`;
+
+
+print "NOTE:  ALL SOURCE FILES SHOULD BE NAMED [.F90|.c|.h],\n";
+print "       [.f] FILES ARE NOT SAVED.\n\n";
+
+
+#===
+find (\&wanted, "$tmp_dir/gmi");
+#===
+ 
+
+#---------
+sub wanted {
+#---------
+
+  my $file_name = "$File::Find::name";
+
+
+  if (($file_name =~ /^.*Makefile$/)      ||
+      ($file_name =~ /^.*Makefile\.bak$/) ||
+      ($file_name =~ /^.*Mkdepend_log$/)  ||
+      ($file_name =~ /^.*\.T$/)           ||
+      ($file_name =~ /^.*\.a$/)           ||
+      ($file_name =~ /^.*\.f$/)           ||
+      ($file_name =~ /^.*\.l$/)           ||
+      ($file_name =~ /^.*\.mod$/)         ||
+      ($file_name =~ /^.*\.o$/)           ||
+      ($file_name =~ /^.*\.rif$/)) {
+    unlink($file_name);
+  }
+}
+
+
+chdir $tmp_dir;
+`/bin/rm -fr gem/Makefile`;
+`/bin/rm -fr gem/bin/gem`;
+`/bin/rm -fr gem/esm_tools/bin/n*diff`;
+`/bin/rm -fr gem/esm_tools/include/fortran.h`;
+`/bin/rm -fr gem/esm_tools/post_proc/ndiff`;
+`/bin/tar cf ggmisav.tar gem`;
+
+chdir $gem_dir;
+chdir "..";
+`/bin/cp $tmp_dir/ggmisav.tar .`;
+
+
+`/bin/rm -fr $tmp_dir`;
+
+
+if ($host_machine eq "seaborg_machine") {
+  print "Storing a copy of ggmisav.tar in hpss/archive.\n\n";
+  `/usr/common/mss/bin/hsi archive put ggmisav.tar`;
+}
+
+
+print "Done.\n\n";
+
+
+exit 0;
+

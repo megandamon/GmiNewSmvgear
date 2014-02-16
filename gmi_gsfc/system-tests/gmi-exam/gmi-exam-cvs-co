@@ -1,0 +1,79 @@
+#!/bin/sh
+#_______________________________________________________________________________
+#
+#  NOTE:  This is a Pre-release prototype module used by the "gmi-exam" modules.
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+#  gmi-exam-cvs-co : Checks out the Global Modeling Initiative (GMI) code, and
+#                    some standardized test cases used to verify each upgrade.
+#
+#                    This script is primarily designed to provide a tool that
+#                    can be run interactively to download the latest version of
+#                    the GMI "gem" code, but will optionally accept a CVS tag.
+#_______________________________________________________________________________
+#
+#  Specify an upper level directory that this script should create and populate
+#  with GMI code.  It extracts the default "gem" folder if no tag is specified.
+#
+#  After the "gem" code has been downloaded, the script will inform the user of
+#  the status of the download and will provide another command they may wish to
+#  cut-and-paste to download the suite of "gmi-exam" standardized tests.
+#
+#  Invocation Example(s):
+#
+# ./gmi-exam-cvs-co   /scr/$USER/GMIexam            (grab default gem directory)
+#
+# ./gmi-exam-cvs-co  /home/$USER/GMIexam  'ELIMINATE_SPACE'   (use this cvs tag)
+#_______________________________________________________________________________
+#
+if   [ "$1" ]; then
+   GMIROOT="$1"
+else
+   GMIROOT="/scr/$USER/GMIexam"
+fi
+if   [ "$2" ]; then
+   TAGFLAG="-r $2"
+else
+   TAGFLAG=" "
+fi
+export GMIROOT
+export TAGFLAG
+if [ -d $GMIROOT ]; then
+   echo ' '
+   echo '<<NOTICE>>  Terminating your request to check out GMI code !!!'
+   echo ' '
+   echo 'Please remove (or move) this target directory, and try again:'
+   echo '-------------------------------------------------------------'
+   echo "$GMIROOT"
+   exit 1;
+else
+   echo ' '
+   echo 'NOTE: About to attempt a CVS download of gem into this directory:'
+   echo '-----------------------------------------------------------------'
+   echo "$GMIROOT"
+   echo ' '
+fi
+CVSACTION="cvs co -d gem $TAGFLAG gmi_gsfc/gem";  export CVSACTION
+CVS_RSH=ssh;                                      export CVS_RSH
+CVSROOT='sourcemotel.gsfc.nasa.gov:/cvsroot/gmi'; export CVSROOT
+mkdir $GMIROOT
+cd    $GMIROOT
+$CVSACTION
+if [ "$?" -eq "0" ]; then
+   echo ' '
+   echo 'The download of GMI code appears to be successful.  Please inspect it.'
+   echo 'If the gem download looks okay, you may then obtain gmi-exam code via:'
+   echo '----------------------------------------------------------------------'
+   echo "cd  $GMIROOT"
+   echo 'cvs co -d system-tests gmi_gsfc/system-tests'
+else
+   echo 'ALERT!  The download of GMI code appears to have failed in some way.'
+   echo 'Please Investigate the cause of this Failure!'
+   exit 2;
+fi
+exit 0;

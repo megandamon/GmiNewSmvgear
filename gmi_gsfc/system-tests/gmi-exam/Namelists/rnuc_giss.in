@@ -1,0 +1,94 @@
+&ESM
+  problem_name = 'rnuc_giss',
+  NP_actm      = 15,
+  oneprcsr     = 0,
+  day0         = 1,
+  tbegin_days  = 0.0d0,
+  tfinal_days  = 1.0d0  /
+&ACTM_CONTROL
+  NPI_actm     = 5,
+  NPJ_actm     = 3,
+  gmi_nborder  = 4,
+  i1_gl        = 1,
+  i2_gl        = 72,
+  ju1_gl       = 1,
+  jv1_gl       = 1,
+  j2_gl        = 46,
+  k1_gl        = 1,
+  k2_gl        = 23,
+  leap_year_flag = -1,
+  num_species  = 2,
+  start_ymd    = 010101,
+  tdt          = 3600.0d0  /
+&ACTM_INPUT
+  gmi_data_dir           = 'gmi_data',
+  met_opt                = 3,
+  met_infile_num         = 1,
+  met_infile_names(1)    = 'GISS_2prime_4x5x23_770101.nc',
+  prs_dim_name           = 'sigma_dim',
+  do_timinterp_met       = F,
+  mdt                    = 10800.0d0,
+  const_opt              = 1,
+  const_labels(1)        = 'Rn',
+  const_labels(2)        = 'Pb',
+  const_init_val(1)      = 1.0d-30,
+  const_init_val(2)      = 1.0d-30,
+  mw(1)                  = 222.0d0,
+  mw(2)                  = 210.0d0  /
+&ACTM_OUTPUT
+  pr_diag                = F,
+  pr_ascii               = T,
+  pr_ascii1              = T,
+  pr_ascii2              = F,
+  pr_ascii3              = F,
+  pr_ascii4              = T,
+  pr_ascii5              = T,
+  do_mean                = T,
+  pr_netcdf              = T,
+  pr_const               = T,
+  pr_kel                 = T,
+  pr_mass                = T,
+  pr_psf                 = T,
+  pr_dry_depos           = T,
+  pr_wet_depos           = T,
+  pr_flux                = F,
+  pr_tend                = F,
+  pr_nc_period_days      = 1.0d0,
+  col_diag_num           = 0,
+  col_diag_species(1)    = 1,
+  col_diag_species(2)    = 1,
+  col_diag_site(1)       = 'Mauna_Loa',
+  col_diag_site(2)       = 'Bermuda',
+  col_diag_period        = 3600.0d0,
+  col_diag_pres(1:10)    = 1000.0d0, 800.0d0, 500.0d0, 100.0d0, 10.0d0,
+                              0.0d0,   0.0d0,   0.0d0,   0.0d0,  0.0d0,
+  col_diag_lat_lon(:,1)  = 19.539d0, 204.43d0,
+  col_diag_lat_lon(:,2)  = 32.27d0,  295.13d0  /
+&ACTM_RESTART
+  pr_restart             = T,
+  pr_rst_period_days     = 1.0d0 /
+&ACTM_ADVEC
+  advec_opt              = 1,
+  press_fix_opt          = 2,
+  do_var_adv_tstp        = T,
+  do_grav_set            = T  /
+&ACTM_CONVEC
+  convec_opt             = 2,
+  do_old_ncar            = F,
+  det_ent                = F,
+  do_downdraft           = T  /
+&ACTM_DEPOS
+  do_drydep              = T,
+  do_wetdep              = T  /
+&ACTM_DIFFU
+  diffu_opt              = 2,
+  pbl_mixing_tau         = 10800.0d0,
+  vert_diffu_coef        = 1.0d0  /
+&ACTM_EMISS
+  emiss_opt              = 0  /
+&ACTM_CHEM
+  chem_opt               = 1  /
+&ACTM_PHOT
+  phot_opt               = 0  /
+&ACTM_TRAC
+  tracer_opt             = 0 /

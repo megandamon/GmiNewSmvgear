@@ -1,0 +1,408 @@
+!  $Id: MAPL_Comms.P90,v 1.2 2011-08-09 22:12:59 mrdamon Exp $
+
+#include "MAPL_ErrLog.h"
+
+!BOP
+
+! !MODULE: MAPL_Comms -- A Module to parallel comunications until ESMF fully supports it
+
+
+! !INTERFACE:
+
+module MAPL_CommsMod
+
+  use ESMF_Mod
+  use MAPL_BaseMod
+  use MAPL_ConstantsMod
+  implicit none
+  private
+
+  public MAPL_Abort
+  public MAPL_CommsBcast
+  public MAPL_CommsScatterV
+  public MAPL_CommsGatherV
+  public MAPL_CommsAllGather
+  public MAPL_CommsAllGatherV
+  public MAPL_CommsSend
+  public MAPL_CommsRecv
+  public MAPL_CommsSendRecv
+  public MAPL_AM_I_ROOT
+  public ArrayGather
+  public ArrayScatter
+
+  public root
+
+  interface MAPL_CommsBcast
+     module procedure MAPL_CommsBcast_STRING_0
+     module procedure MAPL_CommsBcast_I4_0
+     module procedure MAPL_CommsBcast_R4_0
+     module procedure MAPL_CommsBcast_R8_0
+     module procedure MAPL_CommsBcast_I4_1
+     module procedure MAPL_CommsBcast_R4_1
+     module procedure MAPL_CommsBcast_R8_1
+     module procedure MAPL_CommsBcast_I4_2
+     module procedure MAPL_CommsBcast_R4_2
+     module procedure MAPL_CommsBcast_R8_2
+  end interface
+
+  interface MAPL_CommsScatterV
+     module procedure MAPL_CommsScatterV_R4_1
+     module procedure MAPL_CommsScatterV_R4_2
+     module procedure MAPL_CommsScatterV_R8_1
+     module procedure MAPL_CommsScatterV_R8_2
+  end interface
+
+  interface MAPL_CommsGatherV
+     module procedure MAPL_CommsGatherV_I4_1
+     module procedure MAPL_CommsGatherV_R4_1
+     module procedure MAPL_CommsGatherV_R4_2
+     module procedure MAPL_CommsGatherV_R8_1
+     module procedure MAPL_CommsGatherV_R8_2
+  end interface
+
+  interface MAPL_CommsAllGather
+     module procedure MAPL_CommsAllGather_I4_1
+     module procedure MAPL_CommsAllGather_L4_1
+  end interface
+
+  interface MAPL_CommsAllGatherV
+     module procedure MAPL_CommsAllGatherV_I4_1
+     module procedure MAPL_CommsAllGatherV_R4_1
+  end interface
+
+  interface MAPL_CommsSend
+     module procedure MAPL_CommsSend_I4_0
+     module procedure MAPL_CommsSend_I4_1
+     module procedure MAPL_CommsSend_R4_1
+     module procedure MAPL_CommsSend_R4_2
+     module procedure MAPL_CommsSend_R8_1
+     module procedure MAPL_CommsSend_R8_2
+  end interface
+
+  interface MAPL_CommsRecv
+     module procedure MAPL_CommsRecv_I4_0
+     module procedure MAPL_CommsRecv_I4_1
+     module procedure MAPL_CommsRecv_R4_1
+     module procedure MAPL_CommsRecv_R4_2
+     module procedure MAPL_CommsRecv_R8_1
+     module procedure MAPL_CommsRecv_R8_2
+  end interface
+
+  interface MAPL_CommsSendRecv
+     module procedure MAPL_CommsSendRecv_I4_0
+     module procedure MAPL_CommsSendRecv_R4_1
+  end interface
+
+  interface ArrayScatter
+     module procedure ArrayScatter_R4_1
+     module procedure ArrayScatter_R8_1
+     module procedure ArrayScatter_R4_2
+     module procedure ArrayScatter_R8_2
+  end interface
+
+  interface ArrayGather
+     module procedure ArrayGather_I4_1
+     module procedure ArrayGather_R4_1
+     module procedure ArrayGather_R8_1
+     module procedure ArrayGather_R4_2
+     module procedure ArrayGather_R8_2
+  end interface
+
+  include "mpif.h"
+
+  integer, parameter :: root=0
+  integer, parameter :: msg_tag=11
+
+  contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!---------------------------
+!---------------------------
+!---------------------------
+  function MAPL_AM_I_ROOT(layout) result(R)
+    type (ESMF_DELayout), optional :: layout
+    logical                        :: R
+
+    integer       :: deId
+    integer       :: status
+    type(ESMF_VM) :: vm
+
+    R = .false.
+    if (present(layout)) then
+       call ESMF_DELayoutGet(layout, localDe=deId, rc=status)
+    else
+       call ESMF_VMGetGlobal(vm, rc=status)
+       call ESMF_VMGet(vm, localPet=deId, rc=status)
+    end if
+    if (deId == root) R = .true.
+
+  end function MAPL_AM_I_ROOT
+
+!--BCAST -----------------
+
+! Rank 0
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 0
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 1
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 3
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 4
+#include "bcast.H"
+
+! Rank 1
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "bcast.H"
+
+! Rank 2
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 1
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "bcast.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "bcast.H"
+
+
+
+
+! Scatter
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "scatter.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "scatter.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "scatter.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "scatter.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "gather.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "gather.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "gather.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "gather.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "gather.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "allgather.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 2
+#include "allgather.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "allgatherv.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "allgatherv.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 1
+#include "send.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "send.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "send.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "send.H"
+
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "send.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "send.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 1
+#include "recv.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "recv.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "recv.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "recv.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "recv.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "recv.H"
+
+!---------------------------
+!---------------------------
+#define RANK_ 0
+#define VARTYPE_ 1
+#include "sendrecv.H"
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "sendrecv.H"
+
+    subroutine MAPL_Abort
+
+      integer, parameter                    :: errcode=-1
+      integer                               :: ierror
+      integer                               :: comm
+      type(ESMF_VM)                         :: vm
+
+      call ESMF_VMGetGlobal(vm)
+      call ESMF_VMGet(vm, mpiCommunicator=COMM)
+
+      call MPI_Abort(COMM, errcode, ierror)
+    end subroutine MAPL_Abort
+
+!---------------------------
+!---------------------------
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "arrayscatter.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "arrayscatter.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "arrayscatter.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "arrayscatter.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 1
+#include "arraygather.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 3
+#include "arraygather.H"
+
+!---------------------------
+#define RANK_ 1
+#define VARTYPE_ 4
+#include "arraygather.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 3
+#include "arraygather.H"
+
+!---------------------------
+#define RANK_ 2
+#define VARTYPE_ 4
+#include "arraygather.H"
+
+
+!---------------------------
+end module MAPL_CommsMod

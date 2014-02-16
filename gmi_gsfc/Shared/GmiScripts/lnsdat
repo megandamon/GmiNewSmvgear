@@ -1,0 +1,29 @@
+#! /usr/bin/perl -w
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   lnsdat (lns (symbolic link) data)
+#
+# DESCRIPTION
+#   This script symbolically links the GMI input file directory to
+#   "gmi_data" in the current directory.  The Gmimod namelist file can then
+#   point to a generic gmi_data directory.
+#
+#=============================================================================
+#
+
+use strict;
+#use diagnostics;
+use Env;
+
+
+symlink ("$ENV{GMI_DATA}", "gmi_data");
+
+
+exit 0;
+

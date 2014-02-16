@@ -1,0 +1,159 @@
+#!/usr/bin/perl -w
+#_______________________________________________________________________________
+#
+#  gmi-exam-driver :  Pre-release prototype code.  Invocation Example(s):
+#
+#  ./gmi-exam-driver   /scr/$USER/GMIexam  aerosol  20051118-062810
+#  ./gmi-exam-driver  /home/$USER/GMIexam  aerosol  20051118-062810
+#_______________________________________________________________________________
+#
+#  Author :  Bill Hoff (AMTI) of NASA GSFC ASTG/SIVO (Code 610.3)
+#  packaged this and other "gmi-exam" automated modules that build/run GMI code
+#  into a portable directory structure for ASTG Internal Use Only on 11/27/2005
+#_______________________________________________________________________________
+#
+use strict;
+#->  my ($Dbug);   # Only activated if being used for debugging purposes.
+
+my ($chemtype, $dl, $en, $examhome, $gmiroot, $infile);
+my ($m, $nr, $r, $rc, $runthis, $zcase, $zmode, $zplans, $zresult);
+my ($zscript, $ztests, $ztime);
+my (@nolines, @rows, @zcases, @zmoment);
+
+$dl = '=' x 70;    # Divider line of 70 equal sign characters.
+#_______________________________________________________________________________
+#
+#  Begin basic checks and preparations related to I/O arguments, files, etc.
+#_______________________________________________________________________________
+#
+if ( @ARGV < 2  ||  @ARGV > 3 )
+{  print "\n\nERROR.  This program uses 2-3 inputs.  Read its comments.\n";
+   print "Execution Halted.\n";
+   exit 1;
+}
+if ( @ARGV < 3 )
+{  ($gmiroot, $chemtype) = @ARGV;
+   $runthis = 'date +%Y%m%d-%H%M%S';
+   chomp ( @zmoment = `$runthis` );
+   $rc = $? >> 8;
+   if ( $rc )
+   {  print "\nERROR.  Use of the date command failed with return code = $rc\n";
+      print "Execution Halted.\n";
+      exit 2;
+   }
+   $ztime = $zmoment[0];
+}  else
+{  ($gmiroot, $chemtype, $ztime) = @ARGV;
+}
+$examhome = "$gmiroot/system-tests/gmi-exam";
+
+$zplans   = "$examhome/Test-plans/$chemtype";
+$infile   = "$zplans/testcases";
+
+$ztests   = "$examhome/Test-jobs/$chemtype";
+$zresult  = "$ztests/zdriver-result-$ztime";
+$zscript  = "$ztests/zdriver-script-$ztime";
+
+#$Dbug=0;print "E=$examhome\nC=$chemtype\nT=$ztime\nI=$infile\nS=$zscript\n";
+
+$runthis = "mkdir -p $ztests";
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  print "\nERROR.  Could not create directory:\n\n$ztests\nReturn code= $rc\n";
+   print "Execution Halted.\n";
+   exit 3;
+}
+unless ( open ( CASES, "$infile" ) )
+{  print "\nERROR!  Input File: $infile\nencountered OPEN Error: $!\n";
+   print "Execution Halted.\n";
+   exit 4;
+}
+unless ( open ( ZR, "> $zresult" ) )
+{  print "\nERROR!  Could not write to $zresult\n";
+   print "due to OPEN Error: $!\n\nExecution Halted.\n";
+   exit 5;
+}
+unless ( open ( ZS, "> $zscript" ) )
+{  print "\nERROR!  Could not write to $zscript\n";
+   print "due to OPEN Error: $!\n\nExecution Halted.\n";
+   exit 6;
+}
+chomp ( @rows = <CASES> );
+close         (  CASES  );
+$nr=0;
+for $r (@rows)  {  if ( $r !~ /^#/ )  { $zcases[$nr] = $r;  $nr++; }  }
+unless ($nr)
+{  print "\nERROR!  Input File: $infile\nDID NOT contain any line(s) ";
+   print "defining the test case(s).\n\nExecution Halted.\n";
+   exit 7;
+}
+@rows  = ();
+$zmode = 'SPAWNJOBS';       # The default mode is to build and SPAWN Batch Jobs.
+
+if ( defined ($ENV{GMI_EXAM_MODE}) )
+{  $zmode  =  $ENV{GMI_EXAM_MODE};  } # Allow users to run in "Build Only" mode.
+
+if ( $zmode ne 'BUILDJOBS'  &&  $zmode ne 'SPAWNJOBS' )     # Safety precaution.
+{    $zmode =  'BUILDJOBS';    }
+
+$m = "\nThe gmi-exam-driver program will now begin building a script named:\n"
+   . "$dl\n$zscript\n\n"
+   . "It will run one or more test cases for CHEMTYPE = $chemtype\n"
+   . "based on test case names described in the input file:\n"
+   . "$dl\n$infile\n\n"
+   . "Any output related to the building of that script will be stored in:\n"
+   . "$dl\n$zresult\n\n";
+print "$m";
+$m = "This is a record of actions taken / problems detected when building:\n"
+   . "$dl\n$zscript\n\n";
+print ZR "$m";
+
+$m = "#!/bin/sh\n"
+   . "GMI_EXAM_MODE='$zmode' ; export GMI_EXAM_MODE\n";
+print ZS "$m";
+$en = 0;
+for $zcase ( @zcases )
+{  $en++;
+   $m = "\n$examhome/gmi-exam-runner $gmiroot $chemtype $zcase $ztime\n"
+      . 'GMI_EXAM_STATUS="$?"'                                            . "\n"
+      . 'if [ "$GMI_EXAM_STATUS" -ne "0" ]; then'                         . "\n"
+      . "   echo 'ALERT!  The gmi-exam-runner script failed on the call'\n"
+      . "   echo 'for CHEMTYPE = $chemtype / Test Case = $zcase'\n"
+      . '   echo "The gmi-exam-runner Error Exit = $GMI_EXAM_STATUS"'     . "\n"
+      . "   echo 'Please Investigate the cause of this Failure!'\n"
+      . "   exit $en;\n"
+      . "fi\n";
+   print ZS "$m";
+}
+print ZS "exit 0\n";
+close(ZS);
+$runthis = "chmod 750 $zscript";  # Set Group readable/executable bits.
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  $m = "\nERROR!  Failure during processing for CHEMTYPE = $chemtype\n\n"
+      . "Had an unexpected failure when running chmod on this script:\n"
+      . "$dl\n$zscript\n\nReturn code= $rc\n\n"
+      . "Halting Execution of the gmi-exam-driver program.\n"
+      . "Please Investigate this problem!!!\n";
+   print    "$m";
+   print ZR "$m";
+   close(ZR);
+   exit 8;
+}
+close(ZR);
+$runthis = "$zscript >> $zresult 2>&1";
+chomp ( @nolines = `$runthis` );
+$rc = $? >> 8;
+if ( $rc )
+{  $m = "\nERROR!  Failure during processing for CHEMTYPE = $chemtype\n\n"
+      . "An unexpected fatal error occurred when running this script:\n"
+      . "$dl\n$zscript\n\n"
+      . "Halting Execution of the gmi-exam-driver program.\n"
+      . "Please Inspect the contents of this output file for more details:\n"
+      . "$dl\n$zresult\n";
+   print "$m";
+   exit 9;
+}
+exit 0;

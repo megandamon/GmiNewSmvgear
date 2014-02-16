@@ -1,0 +1,152 @@
+%\documentstyle[11pt,twoside,psfig]{article}
+\documentstyle[11pt,twoside]{article}
+%\input{psfig}
+\pagestyle{plain}
+\renewcommand{\baselinestretch}{1.0} % to make document single-spaced
+%\textwidth17.5cm \textheight22.54cm
+\textwidth15.5cm \textheight22.0cm
+\oddsidemargin0mm \evensidemargin-4.5mm \topmargin0.50cm %-27mm
+%\parskip10pt
+\parindent 25pt
+
+\begin{document}
+%
+\title{\Large\bf GMI Reproducibility}
+\author{Jules Kouatchou \\
+        AMTI - NASA/GSFC Code 931 \\
+        Greenbelt, MD 20771}
+\date{March 18, 2004}
+\maketitle
+
+\begin{abstract}
+We carry out a set of experiments of analyze the bitwise reproducibility
+of the GMI model on \textit{daley}. We want to verify if for a particular
+model configuration the GMI code produces exactly the same output files
+(1) when it is ran many times on the same number of processors
+(weak reproducibility), or/and
+(2) when it is ran on different number of processors
+(strong reproducibility).
+\end{abstract}
+
+Here KBLOOP is the maximum number of grid-points in a vectorized block;
+should range from  512 (below which vectorization decreases) to 1024
+(above which array space is limited).
+KBLOOP is used to determine the value of of KTLOOP that is the number
+of grid-cells in a grid-block.
+When KBLOOP=1 then KTLOOP=1 on any processor otherwise the value of
+KTLOOP varies from one processor to another.
+KBLOOP=75 seems to be the optimum value (or close to the optimum)
+providing KTLOOP values producing a significant gain in speed with no
+loss of accuracy on massively parallel computers \cite{Rotman-etal01}.
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c|c|c|c|} \hline\hline
+ Species & Thermal Reactions & Photolytic Reactions & Advected Species \\ \hline\hline
+ 124 & 320 & 81 & 69 \\ \hline\hline
+\end{tabular}
+\caption{Basic information on the chemical mechanism.}
+\label{tab:mecha}
+\end{center}
+\end{table}
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c|c|c|c|} \hline\hline
+Configuration 1 & Configuration 2 & Configuration 3 & Configuration 4 \\ \hline\hline
+75   &   50           &   90           &   25           \\ \hline\hline
+\end{tabular}
+\caption{Values of $KBLOOP$.}
+\label{tab:config}
+\end{center}
+\end{table}
+
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{||c||c|c|c||c|c|c||c|c|c||} \hline\hline
+ & \multicolumn{9}{|c|}{\bf Processor Decomposition} \\ \hline
+ & \multicolumn{3}{|c|}{$8 \times 8$} & \multicolumn{3}{|c|}{$16 \times 8$} & \multicolumn{3}{|c|}{$8 \times 16$} \\ \hline & min & max & avg & min & max & avg & min & max & avg \\ \hline\hline
+Whole GMI           &862.71&862.72&862.71&509.12&509.21&509.15&497.86&497.86&497.86\\
+Time Stepping       &787.57&789.92&788.68&431.39&434.51&432.47&423.21&426.83&425.30\\
+Advection           &78.056&78.670&78.299&50.798&51.152&50.946&50.385&51.024&50.769\\
+Chemistry           &135.71&517.77&345.73&68.650&260.23&178.63&59.016&284.53&171.13\\
+procSyncEndStepping &145.86&532.22&320.21&97.103&288.11&177.62&63.767&292.64&178.60 \\
+writingOutput       &32.264&34.183&33.113&27.226&29.263&27.795&25.908&27.855&26.703\\ \hline\hline
+\end{tabular}   
+\caption{Profiling for Configuration 1.}
+\label{tab:wretime1}
+\end{center}
+\end{table}
+
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{||c||c|c|c||c|c|c||c|c|c||} \hline\hline
+ & \multicolumn{9}{|c|}{\bf Processor Decomposition} \\ \hline
+ & \multicolumn{3}{|c|}{$8 \times 8$} & \multicolumn{3}{|c|}{$16 \times 8$} & \multicolumn{3}{|c|}{$8 \times 16$} \\ \hline & min & max & avg & min & max & avg & min & max & avg \\ \hline\hline
+Whole GMI           &692.22&692.22&692.22&404.85&404.87&404.86&409.35&409.38&409.36\\
+Time Stepping       &617.96&620.49&619.24&335.30&337.11&336.07&335.18&337.98&336.60\\
+Advection           &77.743&78.392&78.001&51.196&51.574&51.362&50.300&50.875&50.687\\
+Chemistry           &116.69&379.59&268.31&58.291&186.78&133.51&51.161&199.25&133.33\\
+procSyncEndStepping &114.74&382.26&228.53&72.775&203.04&126.80&61.551&211.70&127.88 \\
+writingOutput       &32.894&34.636&33.515&28.131&29.294&28.514&26.207&28.368&26.955\\ \hline\hline
+\end{tabular}   
+\caption{Profiling for Configuration 2.}
+\label{tab:wretime2}
+\end{center}
+\end{table}
+
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{||c||c|c|c||c|c|c||c|c|c||} \hline\hline
+ & \multicolumn{9}{|c|}{\bf Processor Decomposition} \\ \hline
+ & \multicolumn{3}{|c|}{$8 \times 8$} & \multicolumn{3}{|c|}{$16 \times 8$} & \multicolumn{3}{|c|}{$8 \times 16$} \\ \hline
+ & min & max & avg & min & max & avg & min & max & avg \\ \hline\hline
+Whole GMI           &958.39&958.41&958.39&559.18&559.19&559.18&553.12&553.17&553.13\\
+Time Stepping       &888.31&890.35&889.19&489.63&491.13&490.38&482.44&486.18&483.91\\
+Advection           &77.784&78.397&78.029&51.147&51.552&51.301&50.109&50.709&50.479\\
+Chemistry           &147.34&605.69&392.67&75.132&315.61&206.59&63.764&336.9247&194.83\\
+procSyncEndStepping &161.72&621.44&374.56&100.13&340.82&208.77&70.145&346.37&213.77\\
+writingOutput       &32.448&34.056&33.041&28.292&29.293&28.671&25.270&27.416&26.140\\ \hline\hline
+\end{tabular}
+\caption{Profiling for Configuration 3.}
+\label{tab:wretime3}
+\end{center}
+\end{table}
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{||c||c|c|c||c|c|c||c|c|c||} \hline\hline
+ & \multicolumn{9}{|c|}{\bf Processor Decomposition} \\ \hline
+ & \multicolumn{3}{|c|}{$8 \times 8$} & \multicolumn{3}{|c|}{$16 \times 8$} & \multicolumn{3}{|c|}{$8 \times 16$} \\ \hline
+ & min & max & avg & min & max & avg & min & max & avg \\ \hline\hline
+Whole GMI           &636.84&636.85&636.84&394.99&395.00&394.99&389.96&390.03&389.99 \\
+Time Stepping       &567.98&570.19&569.18&314.72&315.52&315.11&313.93&319.21&317.07\\
+Advection           &77.395&77.887&77.622&51.008&51.349&51.129&53.186&53.785&53.56\\
+Chemistry           &106.48&343.93&250.18&52.882&168.66&123.04&47.272&182.61&124.15\\
+procSyncEndStepping &103.70&342.31&198.63&70.179&186.98&117.02&53.525&190.84&112.52\\
+writingOutput       &32.277&34.238&32.837&29.054&30.395&29.388&16.163&29.993&26.947\\ \hline\hline
+\end{tabular}
+\caption{Profiling for Configuration 4.}
+\label{tab:wretime4}
+\end{center}
+\end{table}
+
+%*** The following command produces a extra blank line.
+\begin{thebibliography}{99}
+
+\bibitem{Drake-etal} J. Drake, I. Foster, J. Michalakes, B. Toonen and
+    P. Worley,
+    Design and performance of a scalable community climate model
+    {\em Parallel Computing}, {\bf 21}, p. 1571- (1995).
+
+\bibitem{Rotman-etal01} D.A. Rotman, et al,
+    Global modeling initiative assessment model: model description,
+    integration, and testing of the transport shell,
+    {\em J. Geo. Research}, {\bf 106}(D2), p. 1669-1691 (2001).
+
+\end{thebibliography}
+\end{document}
+

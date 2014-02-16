@@ -1,0 +1,272 @@
+\chapter[GMI Files]{GMI Input/Output Files} \label{chap:files}
+
+%
+\section{Input Resource File}
+%
+The input resource file is named $<$gmiResourceFile$>$.rc.
+It allows many variables to be changed without having to
+recompile or relink the code, and it is broken into these sections
+(defined just for clarity):
+%
+\begin{enumerate}
+\item Control
+\item MetFields
+\item SpeciesConcentration
+\item Tracer
+\item Diagnostics
+\item Restart
+\item Advection
+\item Convection
+\item Diffusion
+\item Deposition
+\item Emission
+\item Lightning
+\item Chemistry
+\item Photolysis
+\end{enumerate}
+%
+Here are some basic requirements for editing the resource file:
+%
+\begin{itemize}
+\item There is no requirement to label sections.
+\item The ordering of variables is irrelevant.
+\item The name of a regular variable should be followed by ':' (without a blank space),
+      trailing blank space(s), and its value.
+\item The name of a variable refering to a table should be followed by '::' 
+      (without a blank space), entries of the table (one per line). 
+      The last line should only have '::' to specify the end of the table.
+\item Character variables should not be enclosed in quotes.
+\item Some variable settings are incompatible with each other.
+      The code does some checking operations to catch these at run time.
+\end{itemize}
+%
+
+\noindent
+Appendix \ref{chap:rcFile} gives a list of all the resource file variables,
+their types, and their description.
+%
+%
+%
+\section{Input Datasets}
+
+\noindent
+In Table \ref{tab:inputFiles}, we list all the resource file variables for necessary input
+data and the file in which they are contained. 
+We also briefly describe each file, state whether it is grid dependent, and indicate
+ which chemical mechanism requires it, if any.
+
+{\small
+
+\begin{landscape}
+
+\begin{center}
+\begin{longtable}{|l|l|l|l|l|} \hline\hline
+{\bf Variable Name} & {\bf Type} & {\bf Description} & {\bf Grid Dep.} & {\bf Mechanism} \\ \hline\hline
+\multicolumn{5}{|l|}{\bf SpeciesConcentration:} \\ \hline
+const\_infile\_name           & nc    & Initial species concentration & yes   & all \\ \hline
+fixed\_const\_infile\_name    & nc    & fixed species concentration & yes & all \\ \hline
+\multicolumn{5}{|l|}{\bf Diagnostics:} \\ \hline
+stationsInputFileName         & ascii    & List of stations &  & all \\ \hline
+\multicolumn{5}{|l|}{\bf Restart:} \\ \hline
+restart\_infile\_name         & nc    & restart file                & yes & all \\ \hline
+\multicolumn{5}{|l|}{\bf Emission:} \\ \hline
+emiss\_infile\_name           & nc    & emission data                & yes & all \\ \hline
+fertscal\_infile\_name        & ascii & fertilizer scale data & yes & all \\ \hline
+lai\_infile\_name             & ascii & leaf area index data  & yes & all \\ \hline
+light\_infile\_name           & ascii & light data            &  no & all \\ \hline 
+precip\_infile\_name          & ascii & precipitation data    & yes & all \\ \hline
+soil\_infile\_name            & ascii & soil type data        & no & all \\ \hline
+veg\_infile\_name             & ascii & vegetation data        & yes & all  \\ \hline
+isopconv\_infile\_name        & ascii & isoprene conversion data & no & all  \\ \hline
+monotconv\_infile\_name       & ascii & monoterpene conversion data & no & all  \\ \hline
+laiMEGAN\_InfileName           & nc    & AVHRR leaf area index data  & yes & all \\ \hline
+aefMboMEGAN\_InfileName        & nc    & methyl butenol annual emiss factors & yes & all \\ \hline
+aefIsopMEGAN\_InfileName       & nc    & isoprene annual emiss factors & yes & all \\ \hline
+aefOvocMEGAN\_InfileName       & nc    & other VOC annual emiss factors  & yes & all \\ \hline
+aefMonotMEGAN\_InfileName      & nc    & monoterpene annual emiss factors & yes & all \\ \hline
+scFactorNOff\_infile\_name      & nc    & Scaling factor for NO fossil fuel emission & yes & T/C \\ \hline
+scFactorNObb\_infile\_name      & nc    & Scaling factor for biomass burning emission & yes & T/C \\ \hline
+emiss\_aero\_infile\_name     & nc    & aerosol emissions & yes & A/MA/GA \\ \hline
+emiss\_dust\_infile\_name     & nc    & dust emissions    & yes & A/MA/GA \\ \hline
+GOCARTerod\_infile\_name      & nc    &           & yes & GA  \\ \hline
+GOCARTocean\_infile\_name     & nc    &                & yes & GA \\ \hline
+GOCARTerod\_mod\_infile\_name & nc    &            & yes & GA \\ \hline
+\multicolumn{5}{|l|}{\bf Chemistry:} \\ \hline
+AerDust\_infile\_name         & nc    & aerosol/dust concentrations  & yes & T/C \\ \hline
+forc\_bc\_infile\_name        & ascii & forcing boundary conditions & no & \\ \hline
+loss\_data\_infile\_name      & ascii & loss frequency data & no & \\ \hline
+h2oclim\_infile\_name         & nc    & Water climatology data & yes  & \\ \hline
+lbssad\_infile\_name          & nc    & Liquid binary sulfate & yes & \\ \hline
+rxnr\_adjust\_infile\_name    & nc    & Reaction rate adjustment data & yes & \\ \hline
+\multicolumn{5}{|l|}{\bf Photolysis:} \\ \hline
+cross\_section\_file          & ascii & X-Section quantum yield & no & \\ \hline
+T\_O3\_climatology\_file      & ascii & T \& O3 climatology  & no & \\ \hline
+scattering\_data\_file        & ascii & Aerosol/cloud scattering data & no & \\ \hline
+rate\_file                    & ascii & master rate data & no & \\ \hline
+qj\_infile\_name              & nc    & photolysis rates & yes & GA \\ \hline
+sfalbedo\_infile\_name        & ascii & surface albedo data & yes & \\ \hline
+uvalbedo\_infile\_name        & ascii & uv-albedo data  & yes & \\ \hline
+\caption{List of resource file variables refering to input file names.
+The chemical mechanisms are labeled as follow: aerosol (A), gocart\_aerosol (GA),
+micro\_aerosol (MA), troposphere (T), and strat\_trop (C).}
+\label{tab:inputFiles}
+\end{longtable}
+\end{center}
+
+\end{landscape}
+
+}
+%
+%
+In addition to the files mentioned in Table \ref{tab:inputFiles}, GMI needs
+meteorological (metFields) input files.
+The code uses metFields from various sources. 
+The available metFields files are listed in Table \ref{tab:metFieldsFiles}.
+%
+\begin{center}
+\begin{longtable}{|l|l|l|l|} \hline\hline
+{\bf Source} & {\bf Description} & {\bf Year} & {\bf Resolution}  \\ \hline\hline
+DAO          & GEOS-1 Strat   & 1997, 1998 & $4 \times 5 \times 46$ \\ \hline
+GISS         & GISS prime     & 1977       & $4 \times 5 \times 23$ \\ \hline
+fvGCM        &GMAO GEOS4 AGCM & 1994, 1998 & $4 \times 5 \times 42$ \\ 
+             &             & 1994, 1995, 1996, 1997, 1998 & $2 \times 2.5 \times 42$ \\ \hline
+GEOS4DAS     &GMAO GEOS4 DAS & 2001, 2004, 2005, 2006, 2007 & $4 \times 5 \times 42$ \\
+             &               & 2000, 2001, 2004, 2005, 2006, 2007 & $2 \times 2.5 \times 42$ \\ \hline
+GEOS4FASM    &GMAO GEOS4 Fcst & 2001 & $2 \times 2.5 \times 42$ \\ \hline
+GEOS4FCST    &GMAO GEOS4 first look Fcst & 2004, 2005  & $2 \times 2.5 \times 42$ \\ \hline \hline
+\caption{Available metFields files.}
+\label{tab:metFieldsFiles}
+\end{longtable}
+\end{center}
+%
+The resource file setting of the metFields files is done through the variable
+%
+\begin{verbatim}
+      met_infile_names(), or
+      met_filnam_list
+\end{verbatim}
+%
+%
+\section{Output Files}
+%
+ASCII output and binary output files in netCDF data format are 
+produced from GMI runs. 
+The contents and the number of different output 
+files can be controlled by using appropriate resource file parameters.  
+To obtain information on how these parameters are set, please refer to
+Appendix \ref{chap:rcFile}.
+%
+\subsection{ASCII Diagnostic Output File}
+The following rules apply to the ASCII diagnostic output file:
+\begin{itemize}
+\item Is named $<$problem\_name$>$.asc.
+\item Contains up to five sections, each of which can be turned on or off through 
+      resource file settings.
+\item For the first three sections, only information on a single specified
+      species is output.
+\item Can specify a particular longitude index to use in the second section.
+\item Can specify the output frequency (in number of time steps).
+\end{itemize}
+
+\subsection{netCDF Output Files} \label{sec:netcdfout}
+%
+The netCDF output files that can be produced by the 
+GMI model are:
+%
+\begin{enumerate}
+\item $<$problem\_name$>$.const.nc
+      \begin{itemize}
+      \item species concentration
+      \item $[$+mass$]$
+      \item $[$+ pressure and/or temperature$]$
+      \item $[$+dry depos. and/or wet depos.$]$
+      \end{itemize}
+\item $<$problem\_name$>$.freq\#.nc ($\#$ is 1, 2, 3, 4)
+\item $<$problem\_name$>$.overpass\#.nc ($\#$ is 1, 2, 3, 4)
+\item $<$problem\_name$>$.aerdust.nc
+\item $<$problem\_name$>$.tend.nc
+\item $<$problem\_name$>$.col.nc
+\item $<$problem\_name$>$.cloud.nc
+\item $<$problem\_name$>$.flux.nc
+\item $<$problem\_name$>$.qj.nc
+\item $<$problem\_name$>$.qk.nc
+\item $<$problem\_name$>$.qqi.nc
+\item $<$problem\_name$>$.qqk.nc
+\item $<$problem\_name$>$.sad.nc
+\end{enumerate}
+%
+The user can
+\begin{itemize}
+\item Output or not any of the above netCDF files
+\item Specify snapshots or mean values for most of them.
+\item Specify frequency of output 
+      (by number of days, monthly, and/or the 1st and 15th of each month).
+\end{itemize}
+%
+In addition to these files, the code can also produce
+a netCDF restart file named $<$problem\_name$>$.rst.nc.
+The file contains everything needed to do a continuation run and
+can be written out with the frequency 
+(resource file variable {\em pr\_rst\_period\_days}): number of days, monthly,
+and/or the 1st and 15th of each month.
+There is a resource file variable ({\em do\_overwrt\_rst}) specifying whether 
+to over-write or append to the file.
+
+In Appendix \ref{chap:netcdf}, we provide tables listing the contents of
+the netCDF output files and the frequency that variables in them can be written
+out.
+
+\section{Location of Input, Output, and Other GMI  Files}
+%
+The input and output data files are organized by directory on both dirac and discover.  The main GMI directory on dirac is \textbf{/archive/anon/pub/gmidata2/} and on discover is \textbf{/discover/nobackup/projects/gmi/gmidata2}.  The directory structure below this level is identical on both machines.  
+
+There are 5 major subdirectories underneath \textbf{gmidata2}
+\begin{itemize}
+\item \textbf{input} (Input files for the GMI model)
+\item \textbf{output} (GMI model output files)
+\item \textbf{docs} (Documentation for the GMI model)
+\item \textbf{progs} (GMI scripts and programs)
+\item \textbf{users} (Files and directories generated and used by GMI users)
+\end{itemize}
+
+\subsection{Directories under input/}
+The input files are organized into one of the following 5 subdirectories under \textbf{input/}
+\begin{itemize}
+\item \textbf{metfields}
+\item \textbf{chemistry}
+\item \textbf{emissions}
+\item \textbf{species}
+\item \textbf{run\_info}
+\end{itemize}
+
+The metfields are then further organized by the model from which they were generated (e.g., dao, geos4das, fvgcm), the resolution (e.g., 2x2.5, 4x5), and year (e.g., 1997, 2004) in subdirectories.  
+
+The emissions files are ordered according to chemical/aerosol mechanism for which they are used (e.g., combo, trop, strat, gocart, htap).  Note that files that are commonly used in many or all GMI runs (containing information about soil type, vegetation type, leaf area index, etc.) are located at this directory level in \textbf{common/}.
+
+The input files for GMI chemistry are divided up into \textbf{photolysis/}, \textbf{surfareadens/}, \textbf{aerodust/} and \textbf{misc/}.  The \textbf{misc/} directory contains files that are often used for the runs containing input water, methane, and seasalt data, for example. Under \textbf{photolysis/}, the files are further subdivided into \textbf{lookup/}, \textbf{fastj/}, \textbf{fastjx/}, \textbf{fastjx53c/}, and \textbf{uvalbedo/}.
+
+Under \textbf{species/}, there are two subdirectories: \textbf{fixed/} and \textbf{initial/}.  The files under \textbf{fixed/} contain data for constituents whose concentrations do not change much with time, such as acetone and methane.  The \textbf{initial/} directory contains files that can be used to start a model run if a restart file is not available, especially for runs focusing on aerosols.  Currently, there is an \textbf{aerosol/} directory with relevant input files.
+
+The files under \textbf{run\_info/} include representative resource and restarts files that have been used. Also under \textbf{run\_info/} are potentially useful scripts for running the model and generating resource files.  The resource and restarts for particular model runs are generally stored under the output directory for the experiment.  See Section \ref{sec:outputdirs} for more details.
+%
+%
+\par
+Please note that the \textbf{input/} directory is updated periodically so that the copy on discover matches that on dirac.
+\par
+
+\subsection{Directories under output/} \label{sec:outputdirs}
+
+The directories under \textbf{output/} are organized by chemical mechanism:
+\begin{itemize}
+\item gmic (combo model)
+\item gmia (aerosol model)
+\item gmit (troposphere model)
+\item gmis (stratosphere model)
+\end{itemize}
+%
+\par
+Please note that the output data from the GMI production runs are located only on dirac.  
+\par
+%
+%
+Below each of the above subdirectories, the data are then organized by experiment name (e.g., aura3, aura2for12h, etc.).  Each experiment directory is further subdivided by year and under each year directory, the appropriate files are placed in either \textbf{stations/}, \textbf{diagnostics/}, or \textbf{run\_info/} directories.  If data from the spinup runs used to start the experiment are available, they will be placed in the \textbf{spinup/} directory at the level of the year directory. 

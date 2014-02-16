@@ -1,0 +1,197 @@
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill , LLNL     , jrt@llnl.gov
+#   Jules Kouatchou, NASA/GSFC, Jules.Kouatchou-1@nasa.gov
+#
+# FILE
+#   cshrc.gmi/.cshrc.gmi
+#
+# DESCRIPTION
+#   This .cshrc sub-file contains the necessary settings for running the GMI
+#   code.  The user must initially do the following (first time only):
+#
+#   1) Copy this file to your home directory on the machine of interest and
+#      rename it .cshrc.gmi.
+#
+#   2) Add the following to the end of your .cshrc file:
+#
+###      Set the ARCHITECTURE environment variable to the machine you are on
+###      (ARCH_COMPAQ, ARCH_CRAY, ARCH_IBM_SP, ARCH_SGI_ORIG, ARCH_T3E, etc.):
+#
+#        setenv ARCHITECTURE  ARCH_IBM_SP
+#
+#        if (-e ~/.cshrc.gmi) then
+#          source ~/.cshrc.gmi
+#        endif
+#
+#   3) Change GMIHOME's below to reflect where you will be installing the
+#      code.  Change GMI_DATA's only if you want them to point to a
+#      different directory.
+#
+#   4) When you have taken care of the things above, as well as modified
+#      your login.gmi/.login.gmi, log out of the machine and then log back
+#      on and you should be all set.
+#
+#=============================================================================
+#
+
+
+set HNAME = `hostname`
+
+if      (`expr $HNAME : 'cheetah'` == 7) then
+  setenv HOSTMACH  cheetah_machine
+else if (`expr $HNAME : 'frost'`   == 5) then
+  setenv HOSTMACH  frost_machine
+else if (`expr $HNAME : 'halem'`   == 5) then
+  setenv HOSTMACH  halem_machine
+else if (`expr $HNAME : 'pengra'`  == 6) then
+  setenv HOSTMACH  pengra_machine
+else if (`expr $HNAME : 's0'`      == 2) then
+  setenv HOSTMACH  seaborg_machine
+else if (`expr $HNAME : 'tckk'`    == 4) then
+  setenv HOSTMACH  tckk_machine
+else
+  setenv HOSTMACH  `hostname`_machine
+endif
+
+#setenv CHEMCASE strat_trop_aerosol
+setenv CHEMCASE strat_trop
+#setenv CHEMCASE aerosol
+#setenv CHEMCASE micro_aerosol
+#setenv CHEMCASE gocart_aerosol
+#setenv CHEMCASE stratosphere
+#setenv CHEMCASE troposphere
+
+#================================
+if ($ARCHITECTURE == ARCH_COMPAQ) then
+#================================
+
+  setenv GMIHOME   ~/gmi_gsfc
+  setenv GMI_DATA  ~jrt/gmi_data
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/par
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init Makefile)'
+
+#===================================
+else if ($ARCHITECTURE == ARCH_CRAY) then
+#===================================
+
+  setenv GMIHOME   /tmp/u6382/gmi_gsfc
+  setenv GMI_DATA  /tmp/u6382/gmi_data
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/nopar
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init Makefile)'
+
+#=====================================
+else if ($ARCHITECTURE == ARCH_IBM_SP) then
+#=====================================
+
+  setenv GMIHOME   ~/gmi_gsfc
+
+  if      ($HOSTMACH == cheetah_machine) then
+    setenv GMI_DATA  /dfs/home/jrtjrt/gmi_data
+  else if ($HOSTMACH == frost_machine)   then
+    setenv GMI_DATA  /p/gf1/mirin/gmi_data
+  else if ($HOSTMACH == seaborg_machine) then
+    setenv GMI_DATA  /usr/common/homes/j/jrt/gmi_data
+  endif
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/par
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init.sp Makefile)'
+
+#====================================
+else if ($ARCHITECTURE == ARCH_INTEL) then
+#====================================
+
+  setenv GMIHOME   ~jrt/gmi_gsfc
+  setenv GMI_DATA  ~jrt/gmi_data
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/par
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init.int Makefile)'
+
+#====================================
+else if ($ARCHITECTURE == ARCH_LINUX) then
+#====================================
+
+  setenv GMIHOME   ~jrt/GMI_PUB/gmi_code/gmi_gsfc
+  setenv GMI_DATA  /data/jrtdata/gmi_data
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/nopar
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init Makefile)'
+
+#=======================================
+else if ($ARCHITECTURE == ARCH_SGI_ORIG) then
+#=======================================
+
+  setenv GMIHOME   /scratch2/jrt/gmi_gsfc
+  setenv GMI_DATA  /scratch2/jrt/gmi_data
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/par
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init Makefile)'
+
+#===================================
+else if ($ARCHITECTURE == ARCH_SUN4) then
+#===================================
+
+  setenv GMIHOME   ~jrt/GMI_PUB/gmi_code/gmi_gsfc
+  setenv GMI_DATA  /data/jrtdata/gmi_data
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/nopar
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init Makefile)'
+
+#==================================
+else if ($ARCHITECTURE == ARCH_T3E) then
+#==================================
+
+  setenv GMIHOME   /tmp/jrt/gmi_gsfc
+  setenv GMI_DATA  ~jrt/gmi_data
+
+  setenv NETCDF_FFIOSPEC  cachea:256:8:2
+
+  set ggmit = $GMIHOME/gem/actm/gmimod/Other/test/par
+
+  alias mkmf  '(/bin/rm -f Makefile; make -f $GMIHOME/Config/Makefile.init Makefile)'
+
+#====
+endif
+#====
+
+set gmi    = $GMIHOME
+set gem    = $GMIHOME/gem
+set gmib   = $GMIHOME/Applications/GmiBin
+set gmii   = $GMIHOME/Config
+
+set adveci = $GMIHOME/Components/GmiAdvection/include
+set chemi  = $GMIHOME/Components/GmiChemistry/include
+set deposi = $GMIHOME/Components/GmiDeposition/include
+set emissi = $GMIHOME/Components/GmiEmission/include
+set photi  = $GMIHOME/Components/GmiChemistry/photolysis/include
+set transi = $GMIHOME/gem/actm/gmimod/trans/include
+
+set esmi   = $GMIHOME/gem/esm/include
+set esmti  = $GMIHOME/gem/esm_tools/include
+
+set advec = $GMIHOME/Components/GmiAdvection
+set chem  = $GMIHOME/Components/GmiChemistry
+set depos = $GMIHOME/Components/GmiDeposition
+set diffu = $GMIHOME/Components/GmiDiffusion
+set emiss = $GMIHOME/Components/GmiEmission
+set phot  = $GMIHOME/Components/GmiChemistry/photolysis
+
+if ($?cdpath) then
+  set cdpath = ($cdpath $gmi $advec $chem $depos $diffu $emiss $phot)
+else
+  set cdpath = ($gmi $advec $chem $depos $diffu $emiss $phot)
+endif
+
+alias clgmi  '$gmi/Shared/GmiScripts/clgmi'
+alias mklk   '(cd $gem; make link)'

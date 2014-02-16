@@ -1,0 +1,30 @@
+#! /bin/csh -f
+#
+#=============================================================================
+#
+# CODE DEVELOPER
+#   John Tannahill, LLNL
+#   jrt@llnl.gov
+#
+# FILE
+#   gmi_fcheck
+#
+# DESCRIPTION
+#   This script can be used to run the Flint source code analyzer on GMI.
+#
+#   NOTE THAT A DUMMY mpiof.h FILE IS TEMPORARILY CREATED TO PREVENT SOME
+#   MEANINGLESS ERROR MESSAGES.
+#
+#=============================================================================
+#
+
+/bin/touch mpiof.h
+
+###flint -Mdepend -efgs -O 752 *.f >! gmi_fcheck.out
+flint -Mdepend -efgs -O 732 -O 752 *.f >! gmi_fcheck.out
+
+/bin/rm -f mpiof.h
+
+
+exit 0
+

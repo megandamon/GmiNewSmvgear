@@ -1,0 +1,106 @@
+
+\pagenumbering{arabic}			% Arabic page numbers from now on
+%
+\chapter[Introduction]{Introduction} \label{chap:introduction}
+%\section{Overview of the Model}
+%\pagenumbering{arabic}			% Arabic page numbers from now on
+%
+The Global Modeling Initiative (GMI) 
+\footnote{http://gmi.gsfc.nasa.gov/gmi.html}
+was initiated under the auspices of the Atmospheric Effects of Aircraft 
+Program (AEAP) in 1995. 
+The goal of GMI is to develop and maintain a state-of-the-art
+modular 3-D chemistry transport model (CTM) that can be used
+to assess the impact of various natural and anthropogenic
+perturbations on atmospheric composition and chemistry, including,
+but not exclusively, the effect of aircraft.
+
+The Atmospheric Chemistry Modeling and Analysis Program (ACMAP)
+ has selected the approach of GMI to serve
+both as an assessment facility and a testbed for model improvements
+for future assessment in all areas of atmospheric chemistry.
+%
+The goals in the design of GMI as an assessment tool are \cite{Kinnison-etal01}
+%
+\begin{enumerate}
+\item The model should be well-characterized and thoroughly tested
+      against observations.
+\item The model should be able to test and compare a diversity of
+      approaches to specific processes by being able to easily swap
+      modules containing different formulations of chemical
+      processes, within a common framework.
+\item The model should be optimized for computational efficiency and
+      be able to run on different platforms.
+\item Model results should be examined by a large representation of
+      the scientific community, thus faciliting consensus on the significance
+      of assessment results.
+\item Ultimately, the model integration could provide a unique assessment
+      capability for other anthropogenic impacts of concern by providing
+      a testbed for other algorithms and intercomparisons used in
+      assessment of those issues.
+\end{enumerate}
+%
+Many elements of the GMI model address these goals.
+The GMI model is a modular chemistry-transport model (CTM) with
+the ability to carry out multi-year assessment simulations as
+well as incorporate different modules, such as meteorological
+fields, chemical mechanisms, numerical methods, and other modules
+representing the different approaches of current models. This
+capability facilitates the understanding of the differences
+and uncertainties of model results.
+
+The testing of GMI results against observations is a high priority
+of GMI activities. Science Team members contribute by either
+supplying a particular module and/or contributing to the analysis
+of the results and comparison with atmospheric observations
+\cite{Douglass-etal99, Rotman-etal01, Strahan-Duncan-Hoor07, Meskhidze-etal07}. 
+Application of the model to the potential impacts of
+stratospheric aircraft emissions is presented in \cite{Kinnison-etal01}. 
+The model has been employed to investigate the effects of stratospheric aircraft
+emissions on polar stratospheric clouds \cite{Considine-etal00} and simulate
+ozone recovery over a 36-year time period \cite{Considine-etal04}.
+
+Besides acting as a testbed for different modules, GMI will also
+act as a 3-D assessment facility. The GMI modular code is currently
+implemented at NASA/Goddard Space Flight Center (the core institution).
+The core institution is responsible for: 
+%
+\begin{itemize}
+\item Integrating and testing components of the GMI model, 
+\item Making the code readable, flexible and easy to maintain
+\item Maintaining coding standards which will make the model 
+      portable to different platforms
+\item Carrying out assessment calculations, and 
+\item Providing first-order results and diagnostics for 
+      analysis by team members. 
+\end{itemize}
+%
+The current  version of the code has been developed to run on a variety of 
+computing platforms, both with single and multiple processors 
+(Linux clusters, SGI Origin series, HP Compaq SC45, 
+single processor workstations, etc.).
+
+This report is intended to familiarize users with the GMI code.
+Users will be able to 
+\begin{itemize}
+\item Have information on the code structure (Chapter \ref{chap:structure}).
+\item Obtain instructions on how to obtain the code, install it, 
+      compile it, run it on any platform (Chapter \ref{chap:installation}).
+\item Have knowledge of all the input and output files involved in the
+      code (Chapter \ref{chap:files}, Appendix \ref{chap:netcdf} and
+      Appendix \ref{chap:rcFile}).
+\item Carry out specific and restart runs (Chapter \ref{chap:runs}).
+\item Learn how to make changes in the code (Chapter \ref{chap:changes}).
+\item Execute useful script tools needed, for instance, to search
+      for words, to produce restart input resource files, etc.
+      (Chapter \ref{chap:script}).
+\item Learn basic CVS commands (Chapter \ref{chap:cvs}).
+\item Analyze the parallel performance of the code 
+      (Chapter \ref{chap:performance}).
+\item Be familiar with include files used to select the desired architecture,
+      to set up compilation options, etc. (Appendix \ref{chap:inc_files}).
+\item Know how to carry out a single or multiple processor run 
+      (Appendix \ref{chap:proc_runs}).
+\item Use resource file features (Appendix \ref{chap:features}).
+\item Know the species used in the code (Appendix \ref{chap:listSpecies}).
+\end{itemize}

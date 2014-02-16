@@ -1,0 +1,89 @@
+&ESM
+  problem_name ='trac_coA_fvgcm',
+  NP_actm      = 15,
+  oneprcsr     = 0,
+  day0         = 1,
+  tbegin_days  = 0.0d0,
+  tfinal_days  = 1.0d0  /
+&ACTM_CONTROL
+  NPI_actm     = 5,
+  NPJ_actm     = 3,
+  gmi_nborder  = 4,
+  i1_gl        = 1,
+  i2_gl        = 72,
+  ju1_gl       = 1,
+  jv1_gl       = 1,
+  j2_gl        = 46,
+  k1_gl        = 1,
+  k2_gl        = 42,
+  num_species  = 1,
+  start_ymd    = 970101,
+  tdt          = 3600.0d0
+  tdt = 3600.0d0,
+  loss_opt = 0,
+  leap_year_flag = -1  /
+&ACTM_INPUT
+  gmi_data_dir           = 'gmi_data',
+  met_opt                = 3,
+  prs_dim_name           = 'eta_dim',
+  met_infile_num         = 1,              ! 
+  mrnum_in               =  1,             ! 
+  met_infile_names(1)    = 'G4agcm_5x4x42_19940101.nc',
+  met_infile_names(2)    = 'G4agcm_5x4x42_19940102.nc',
+  met_grid_type          = 'A',             ! DAO or NCAR
+  do_timinterp_met       = F,
+  mdt                    = 10800.0d0,
+  const_opt              = 1,
+  const_labels(1)        = 'co',
+  const_init_val(1)      = 1.0d-30,
+  mw(1)                  = 28.0d0 /
+&ACTM_OUTPUT
+  pr_diag                = F,
+  pr_ascii               = T,
+  pr_ascii1              = T,
+  pr_ascii2              = F,
+  pr_ascii3              = T,
+  pr_ascii4              = T,
+  pr_ascii5              = T,
+  do_mean                = T,
+  pr_netcdf              = T,
+  pr_const               = T,
+  pr_kel                 = T,
+  pr_mass                = T,
+  pr_psf                 = T,
+  pr_dry_depos           = T,
+  pr_wet_depos           = T,
+  pr_surf_emiss          = T,
+  pr_flux                = F,
+  pr_tend                = F,
+  pr_nc_period_days      = 1.0d0 /
+&ACTM_RESTART
+  pr_restart             = T,
+  pr_rst_period_days     = 1.0d0  /
+&ACTM_ADVEC
+  advec_opt              = 1,
+  press_fix_opt          = 2,
+  advec_flag_default     = 1,
+  do_var_adv_tstp        = T,
+  do_grav_set            = T  /
+&ACTM_CONVEC
+  convec_opt             = 3  /
+&ACTM_DEPOS
+  do_drydep              = F,
+  do_wetdep              = F  /
+&ACTM_DIFFU
+  diffu_opt              = 1,
+  vert_diffu_coef        = 1.0d0  /
+&ACTM_EMISS
+  emiss_opt              = 1,
+  emiss_in_opt           = 2, 
+  emiss_timpyr          = 12,
+  emiss_map(1)           = 1,
+  emiss_infile_name      = 'hrvd_co_a_fvGCM.nc' /
+&ACTM_CHEM
+  chem_opt               = 0  /
+&ACTM_PHOT
+  phot_opt               = 0  /
+&ACTM_TRAC
+  tracer_opt             = 1,
+  efol_time              = 60.0d0 /
